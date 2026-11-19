@@ -7,23 +7,28 @@ total, 38 reglas, 25 de 27 casos del set de evaluación. Repositorio público. R
 291 pruebas pasan. Producción: 1.478 líneas de 1.500.
 
 ## Siguiente paso
-Segunda revisión independiente sobre la punta (código y README) y sus arreglos. Después,
-ensayar la llamada en vivo: ingerir un documento nuevo desde la interfaz con la clave de ingesta.
+El usuario pulsa Deploy en Easypanel para publicar los arreglos de la segunda revisión
+(commit `12ba737`) y decide qué se queda en el repositorio público (ver pendientes). Después,
+comprobar en producción y ensayar la ingesta de un sexto documento.
 
 ## Pendientes
-- **Segunda revisión independiente.** En curso o por lanzar. La primera fue antes de los
-  arreglos y de los cambios de la corrida real.
-- **Easypanel no redespliega solo.** Tras cada push hay que pulsar Deploy (o activar el
-  despliegue automático). El volumen `withholding-data` conserva la base entre despliegues;
-  falta comprobarlo con un redespliegue real.
-- **Dos casos fallan en producción**, ambos con respuesta segura: `us-services-backup-withholding`
-  (sale un motivo de revisión de más) y `us-supplemental-wages-optional-flat-rate`
-  (`conflicting_rules`). La extracción varía entre corridas; está dicho en el README.
-- **Ensayo de la llamada en vivo.** Falta probar la ingesta de un sexto documento desde la
-  interfaz, idealmente uno escaneado, que es el camino «diseñado, no ejercitado».
-- **El README va solo en inglés**, por el tope de una página: **decisión mía sin confirmar**
-  (la regla del proyecto decía inglés y español).
-- **Margen de líneas.** Quedan 22.
+- **Producción corre una versión anterior.** Los arreglos de la segunda revisión están en
+  `main` pero no desplegados: falta pulsar Deploy. No hace falta reingerir (cambió el resolve,
+  no la extracción). Al redesplegar se comprueba de paso que el volumen conserva la base.
+- **Documentación interna en el repositorio público.** `CLAUDE.md`, `INDICE.md`, `PLAN.md`,
+  `PROGRESO.md`, `EN-CURSO-historial.md`, `.claude/` y `eval/notas/` suman más de 2.000 líneas
+  frente al tope de «una página de documentación», y `PLAN.md` nombra otro subdominio del
+  usuario. La revisión propone sacarlos del repositorio (`git rm --cached`, se quedan en
+  disco). Es decisión del usuario; el historial de git los conserva igual.
+- **Etiqueta `condition` sin validar contra el texto.** Hay reglas guardadas como firmes cuya
+  cita dice «unless you choose» o «certain kinds». Está declarado en el README y los seis
+  casos afectados van con confianza media. El arreglo de fondo (palabras de salvedad en la
+  cita impiden «firme») exige reingerir y cambiar esperados: sin decidir.
+- **Densidad de `static/index.html`.** 112 de sus líneas pasan de 120 caracteres; un
+  evaluador estricto puede decir que con formato normal se rebasa el tope de 1.500.
+- **Ensayo de la llamada en vivo.** Falta ingerir un sexto documento desde la interfaz,
+  idealmente escaneado y de otro país.
+- **Margen de líneas.** Quedan 15 (1.485 de 1.500).
 - **Horas ya gastadas.** No se ha llevado la cuenta del presupuesto de 6 horas.
 
 ## Decisiones
@@ -53,6 +58,8 @@ ensayar la llamada en vivo: ingerir un documento nuevo desde la interfaz con la 
 ### 2026-11-19
 - Hecho: lectura y explicación del enunciado; investigación de opciones de extracción y de
   alojamiento; descarga y prueba de cuatro documentos del corpus; `PLAN.md`.
+- Hecho: segunda revisión independiente (1 bloqueante y 8 que convenía arreglar) y sus
+  arreglos, salvo los que son decisión del usuario.
 - Hecho: repositorio público, despliegue en Easypanel (el usuario en los paneles), ingesta
   de los cinco documentos en producción y README.
 - Hecho: primera corrida real contra Claude con la clave del usuario; cinco rondas de
