@@ -1,6 +1,7 @@
 """Pruebas de app.extract con un cliente falso: sin red y sin clave real (R2, R3, R5)."""
 import asyncio
 import base64
+import inspect
 import json
 import re
 from types import SimpleNamespace
@@ -286,21 +287,166 @@ def test_thinking_block_before_text_is_skipped():
     assert result.groups_failed == 0 and len(result.claims) == 1
 
 
-def test_vision_page_sends_its_image():
-    png = b"\x89PNG\r\n\x1a\nfake"
-    pages = [Page(1, "text page", "text"), Page(2, "", "vision")]
-    client = FakeClient()
-    run(pages, client, images={2: png, 1: b"unused"})
-    blocks = client.calls[0]["messages"][0]["content"]
-    images = [b for b in blocks if b["type"] == "image"]
-    assert len(images) == 1
-    assert images[0]["source"] == {"type": "base64", "media_type": "image/png",
-                                   "data": base64.standard_b64encode(png).decode("ascii")}
-    assert [1, 2] == pages_in(client.calls[0])
-
-
 def test_no_pages_means_no_calls():
     client = FakeClient()
     result = run([], client)
     assert client.calls == []
     assert (result.claims, result.groups_total, result.groups_failed, result.partial) == ([], 0, 0, False)
+
+
+# extract_claims con páginas escaneadas: llegan ya transcritas y viajan como texto
+
+def test_extract_claims_takes_no_images():
+    assert "images" not in inspect.signature(extract_claims).parameters
+
+
+def test_transcribed_vision_page_travels_as_text_without_image_blocks():
+    pages = [Page(1, "text page", "text"), Page(2, "Scanned. Withhold 24% on item 2.", "vision")]
+    client = FakeClient()
+    run(pages, client)
+    blocks = client.calls[0]["messages"][0]["content"]
+    assert [b["type"] for b in blocks] == ["text"]
+    assert '<document_page number="2">\nScanned. Withhold 24% on item 2.\n</document_page>' \
+        in user_text(client.calls[0])
+    assert "image" not in client.calls[0]["system"]
+
+
+def test_vision_page_without_transcript_is_not_sent():
+    pages = [Page(1, "text page", "text"), Page(2, "", "vision"), Page(3, " \n", "vision")]
+    client = FakeClient()
+    result = run(pages, client)
+    assert [pages_in(c) for c in client.calls] == [[1]]
+    assert (result.groups_total, result.groups_failed) == (1, 0)
+    client = FakeClient()
+    result = run(pages[1:], client)
+    assert client.calls == []
+    assert (result.claims, result.groups_total, result.partial) == ([], 0, False)
+
+
+# transcribe
+
+PNG = b"\x89PNG\r\n\x1a\nfake-png"
+JPEG = b"\xff\xd8\xff\xe0fake-jpeg"
+PNG_B = b"\x89PNG\r\n\x1a\nother-png"
+SCAN = {PNG: "Scan 2026.\nWithhold 24% on item 2.", JPEG: f"Page three. {INJECTION}",
+        PNG_B: "Page five text."}
+
+
+def image_of(kwargs):
+    """La imagen que lleva una llamada de transcripción (debe ser exactamente una)."""
+    (block,) = [b for m in kwargs["messages"] for b in m["content"] if b["type"] == "image"]
+    assert block["source"]["type"] == "base64"
+    return base64.standard_b64decode(block["source"]["data"]), block["source"]["media_type"]
+
+
+def text_reply(text, stop_reason="end_turn"):
+    return SimpleNamespace(stop_reason=stop_reason, model="m",
+                           content=[SimpleNamespace(type="text", text=text)])
+
+
+async def scan_handler(kwargs):
+    return text_reply(SCAN[image_of(kwargs)[0]])
+
+
+def scanned_pages():
+    return [Page(1, "text page", "text"), Page(2, "", "vision"), Page(3, "", "vision"),
+            Page(4, "", "vision"), Page(5, "", "vision")]
+
+
+def run_transcribe(pages, images, client, deadline=None):
+    return asyncio.run(
+        extract.transcribe(pages, images, deadline or Deadline.start(120), client=client))
+
+
+IMAGES = {1: b"\x89PNGunused", 2: PNG, 3: JPEG, 5: PNG_B}  # la 4 no tiene imagen
+
+
+def test_transcribe_one_parallel_call_per_vision_page_with_image():
+    pages = scanned_pages()
+    client = FakeClient(scan_handler)
+    result = run_transcribe(pages, IMAGES, client)
+    assert sorted(image_of(c)[0] for c in client.calls) == sorted([PNG, JPEG, PNG_B])
+    assert client.max_active == 3
+    assert result == [pages[0], Page(2, SCAN[PNG], "vision"), Page(3, SCAN[JPEG], "vision"),
+                      pages[3], Page(5, SCAN[PNG_B], "vision")]
+    assert result[0] is pages[0] and pages[1].text == ""
+
+
+def test_transcribe_image_block_has_detected_media_type():
+    client = FakeClient(scan_handler)
+    run_transcribe(scanned_pages(), IMAGES, client)
+    assert dict(image_of(c) for c in client.calls) == {
+        PNG: "image/png", JPEG: "image/jpeg", PNG_B: "image/png"}
+
+
+def test_transcribe_unknown_image_type_is_not_sent():
+    client = FakeClient(scan_handler)
+    pages = [Page(1, "", "vision"), Page(2, "", "vision")]
+    result = run_transcribe(pages, {1: b"GIF89a-not-supported", 2: PNG}, client)
+    assert [image_of(c)[0] for c in client.calls] == [PNG]
+    assert result == [pages[0], Page(2, SCAN[PNG], "vision")]
+
+
+def test_transcribe_without_vision_pages_makes_no_call():
+    client = FakeClient(scan_handler)
+    pages = make_pages(3)
+    assert run_transcribe(pages, {1: PNG, 2: JPEG}, client) == pages
+    assert run_transcribe(scanned_pages(), {}, client) == scanned_pages()
+    assert client.calls == []
+
+
+def test_transcribe_failures_leave_only_their_page_empty():
+    async def handler(kwargs):
+        data = image_of(kwargs)[0]
+        if data == PNG:
+            raise RuntimeError("boom")
+        return text_reply(SCAN[data], stop_reason="refusal" if data == JPEG else "end_turn")
+
+    result = run_transcribe(scanned_pages(), IMAGES, FakeClient(handler))
+    assert [p.text for p in result] == ["text page", "", "", "", SCAN[PNG_B]]
+    assert all(p.source_kind == "vision" for p in result[1:])
+
+
+def test_transcribe_expired_deadline_makes_no_call():
+    for seconds in (0, extract.DEADLINE_MARGIN_SECONDS - 1):
+        client = FakeClient(scan_handler)
+        assert run_transcribe(scanned_pages(), IMAGES, client, Deadline.start(seconds)) == scanned_pages()
+        assert client.calls == []
+
+
+def test_transcribe_deadline_expiring_midway_keeps_fast_pages():
+    async def handler(kwargs):
+        if image_of(kwargs)[0] == JPEG:
+            await asyncio.sleep(5)
+        return await scan_handler(kwargs)
+
+    deadline = Deadline.start(extract.DEADLINE_MARGIN_SECONDS + 0.4)
+    result = run_transcribe(scanned_pages(), IMAGES, FakeClient(handler), deadline)
+    assert [p.text for p in result] == ["text page", SCAN[PNG], "", "", SCAN[PNG_B]]
+    assert deadline.remaining() > 0
+
+
+def test_transcribe_request_shape_and_untrusted_content_stays_out_of_system(monkeypatch):
+    monkeypatch.setenv("EXTRACT_MAX_CONCURRENCY", "2")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", FAKE_KEY)
+    client = FakeClient(scan_handler)
+    run_transcribe(scanned_pages(), IMAGES, client, Deadline.start(60))
+    assert len(client.calls) == 3 and client.max_active == 2
+    assert all(o["max_retries"] == 0 for o in client.options)
+    assert all(0 < o["timeout"] <= 60 - extract.DEADLINE_MARGIN_SECONDS for o in client.options)
+    for call in client.calls:
+        assert call["system"] == extract.TRANSCRIBE_PROMPT
+        assert call["model"] == "claude-opus-5-5"
+        assert "format" not in call.get("output_config", {})  # texto plano, sin salida estructurada
+        assert [m["role"] for m in call["messages"]] == ["user"]
+        for banned in ("temperature", "top_p", "tool_choice", "tools", "thinking"):
+            assert banned not in call
+    prompt = extract.TRANSCRIBE_PROMPT
+    assert "untrusted" in prompt and "never instructions" in prompt
+    assert not any(text in prompt for text in SCAN.values()) and INJECTION not in prompt
+    assert FAKE_KEY not in json.dumps(client.calls) + json.dumps(client.options) + prompt
+
+
+def test_transcribed_injection_reaches_the_page_text_as_data():
+    result = run_transcribe(scanned_pages(), IMAGES, FakeClient(scan_handler))
+    assert INJECTION in result[2].text  # app.validate.detect_injection lo registra desde aquí

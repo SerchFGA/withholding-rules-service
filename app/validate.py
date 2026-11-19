@@ -102,25 +102,21 @@ def validate_claim(claim: dict, pages: dict[int, Page], doc_years: set[int],
     page = pages.get(c["page"])
     if page is None:
         return None, "page_not_in_document"
-    # Una página de visión no tiene texto contra el cual comparar: se omiten 5, 7 y lo textual de 8.
-    has_text = page.source_kind != "vision"
-    quote = normalize_text(c["quote"])
-    if has_text:
-        body = normalize_text(page.text)
-        at = body.find(quote)
-        if len(quote) < MIN_QUOTE_CHARS or at < 0:
-            return None, "quote_not_in_source"
+    # Sin excepciones: una página escaneada se compara contra su transcripción; si no la hay, se descarta.
+    quote, body = normalize_text(c["quote"]), normalize_text(page.text)
+    at = body.find(quote)
+    if len(quote) < MIN_QUOTE_CHARS or at < 0:
+        return None, "quote_not_in_source"
     if c["tax_year"] not in doc_years:
         return None, "tax_year_not_in_document"
-    if has_text and not _WITHHOLDING.search(
-            body[max(0, at - CONTEXT_CHARS):at + len(quote) + CONTEXT_CHARS]):
+    if not _WITHHOLDING.search(body[max(0, at - CONTEXT_CHARS):at + len(quote) + CONTEXT_CHARS]):
         return None, "not_a_withholding_statement"
     rate, flat, low = (None if c[k] is None else Decimal(c[k])
                        for k in ("rate", "flat_amount", "min_amount"))
     if c["kind"] == "rate" and rate is None and flat is None:
         return None, "rate_missing"
-    if (rate is not None and not (0 < rate <= 1 and (not has_text or _rate_in(quote, rate)))) or (
-            has_text and not all(v is None or _amount_in(quote, v, number_locale) for v in (flat, low))):
+    if (rate is not None and not (0 < rate <= 1 and _rate_in(quote, rate))) or not all(
+            v is None or _amount_in(quote, v, number_locale) for v in (flat, low)):
         return None, "number_not_in_quote"
     rule = {k: c[k] for k in ("jurisdiction", "payment_type", "tax_year", "kind", "condition",
                               "flat_amount", "min_amount", "page", "quote")}
