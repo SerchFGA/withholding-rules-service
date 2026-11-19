@@ -1,0 +1,182 @@
+"""Servicio HTTP. Aquí vive el orden de los pasos; el modelo solo se llama dentro de la ingesta."""
+import asyncio
+import hmac
+import json
+import os
+import re
+import uuid
+from collections import Counter
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
+from pathlib import Path
+
+from fastapi import FastAPI, Header, Request
+from fastapi.responses import FileResponse, JSONResponse
+
+from app import db, extract, fetch, parse, validate
+from app.logs import log, safe_url
+from app.models import (JURISDICTION_PATTERN, PAYEE_TYPES, PAYMENT_TYPES, Deadline,
+                        DeadlineExceeded, Query)
+from app.resolve import resolve
+
+app = FastAPI(title="Withholding rules service", version="1.0")
+STATIC = Path(__file__).resolve().parent.parent / "static"
+
+
+def error(status: int, code: str, request_id: str, **extra):
+    return JSONResponse({"error": code, "request_id": request_id, **extra}, status_code=status)
+
+
+@app.middleware("http")
+async def request_context(request: Request, call_next):
+    """Plazo y número de petición desde la llegada. El log lleva la ruta, nunca los parámetros."""
+    request.state.request_id = uuid.uuid4().hex[:12]
+    request.state.deadline = Deadline.start()
+    try:
+        response = await call_next(request)
+    except DeadlineExceeded:
+        response = error(504, "deadline_exceeded", request.state.request_id)
+    except Exception as exc:  # el detalle no sale al cliente ni al log, solo el tipo
+        log("unhandled_error", request_id=request.state.request_id, error_type=type(exc).__name__)
+        response = error(500, "internal_error", request.state.request_id)
+    log("request", request_id=request.state.request_id, method=request.method,
+        path=request.url.path, status=response.status_code)
+    return response
+
+
+@app.get("/health")
+def health():
+    conn = db.connect()
+    docs = conn.execute("SELECT COUNT(*) FROM documents").fetchone()[0]
+    return {"status": "ok", "documents": docs, "rules_version": db.rules_version(conn)}
+
+
+@app.get("/")
+def index():
+    return FileResponse(STATIC / "index.html")
+
+
+@app.get("/v1/documents")
+def documents():
+    rows = db.connect().execute(
+        "SELECT source_url, content_sha256, kind, pages, status, model_version, claims_total,"
+        " claims_rejected, security_events, ingested_at FROM documents ORDER BY id")
+    return {"items": [dict(r, security_events=json.loads(r["security_events"])) for r in rows]}
+
+
+@app.post("/v1/documents")
+async def ingest(request: Request, x_ingest_key: str | None = Header(default=None)):
+    rid, deadline = request.state.request_id, request.state.deadline
+    expected = os.environ.get("INGEST_KEY", "")
+    if not expected or not hmac.compare_digest(x_ingest_key or "", expected):
+        return error(401, "ingest_key_required", rid)
+    try:
+        url = (await request.json())["source_url"]
+        assert isinstance(url, str)
+    except Exception:
+        return error(422, "source_url_required", rid)
+    try:
+        fetched = await asyncio.to_thread(fetch.fetch, url, deadline)
+    except fetch.FetchError as exc:
+        return error(502, "fetch_failed", rid, detail=str(exc))
+    conn = db.connect()
+    known = db.find_document(conn, url)
+    if known and known["content_sha256"] == fetched.sha256 and known["status"] == "complete":
+        # Mismo contenido ya leído completo: ni registros duplicados ni gasto de modelo.
+        log("ingest_cached", request_id=rid, source_url=url, sha256=fetched.sha256)
+        return {"source_url": url, "content_sha256": fetched.sha256, "status": "complete",
+                "cached": True, "model_calls": 0}
+    try:
+        kind = parse.detect_kind(fetched.content, fetched.content_type)
+    except ValueError:
+        return error(422, "unsupported_document_type", rid)
+    pages = await asyncio.to_thread(parse.parse, fetched.content, kind)
+    events = validate.detect_injection(pages)
+    images = {p.number: (fetched.content if kind == "image"
+                         else parse.render_page_png(fetched.content, p.number))
+              for p in pages if p.source_kind == "vision"}
+    result = await extract.extract_claims(pages, safe_url(url), deadline, images=images)
+    by_number = {p.number: p for p in pages}
+    years, locale = validate.document_years(pages), parse.detect_number_locale(pages)
+    rules, rejected = [], Counter()
+    for claim in result.claims:
+        rule, reason = validate.validate_claim(claim, by_number, years, locale, url)
+        if rule:
+            rules.append(rule)
+        else:
+            rejected[reason] += 1   # lo que no se valida se descarta, no se confía
+    status = "partial" if result.partial else "complete"
+    db.replace_document(conn, url, fetched.sha256, kind, len(pages), status, result.model_version,
+                        len(result.claims), sum(rejected.values()), events,
+                        datetime.now(timezone.utc).isoformat(timespec="seconds"), rules)
+    summary = {"source_url": url, "content_sha256": fetched.sha256, "kind": kind,
+               "pages": len(pages), "status": status, "cached": False,
+               "model_version": result.model_version, "model_calls": result.groups_total,
+               "groups_failed": result.groups_failed, "claims_total": len(result.claims),
+               "claims_rejected": dict(rejected), "rules_stored": len(rules),
+               "security_events": events, "rules_version": db.rules_version(conn)}
+    log("ingest", request_id=rid, **summary)
+    if result.partial:   # leído a medias: se dice, y el resolve lo marcará para revisión
+        summary["requires_human_review"] = True
+        summary["review_reasons"] = ["document_partially_read"]
+    return summary
+
+
+@app.get("/v1/rules")
+def rules(jurisdiction: str | None = None, payment_type: str | None = None,
+          tax_year: int | None = None, limit: int = 50, offset: int = 0):
+    conn, limit, offset = db.connect(), max(1, min(limit, 200)), max(0, offset)
+    items = db.list_rules(conn, jurisdiction, payment_type, tax_year, limit, offset)
+    total = len(db.list_rules(conn, jurisdiction, payment_type, tax_year))
+    return {"items": [{**vars(r), "rate": r.rate and str(r.rate),
+                       "flat_amount": r.flat_amount and str(r.flat_amount),
+                       "min_amount": r.min_amount and str(r.min_amount)} for r in items],
+            "limit": limit, "offset": offset, "total": total,
+            "rules_version": db.rules_version(conn)}
+
+
+def parse_query(params) -> Query:
+    """Parámetros estructurados y cerrados. Ningún modelo interpreta la petición."""
+    allowed = {"payment_type", "amount", "jurisdiction", "tax_year", "payee_type"}
+    if set(params) - allowed:
+        raise ValueError("unknown_parameter")
+    try:
+        amount, year = Decimal(params["amount"]), int(params["tax_year"])
+    except (KeyError, InvalidOperation, ValueError):
+        raise ValueError("amount_and_tax_year_required")
+    payee = params.get("payee_type")
+    if (not amount.is_finite() or amount <= 0 or not 2000 <= year <= 2100
+            or params.get("payment_type") not in PAYMENT_TYPES
+            or not re.match(JURISDICTION_PATTERN, params.get("jurisdiction", ""))
+            or (payee is not None and payee not in PAYEE_TYPES)):
+        raise ValueError("invalid_parameter_value")
+    return Query(params["payment_type"], amount, params["jurisdiction"], year, payee)
+
+
+@app.get("/v1/resolve")
+def resolve_endpoint(request: Request):
+    rid, deadline = request.state.request_id, request.state.deadline
+    try:
+        query = parse_query(dict(request.query_params))
+    except ValueError as exc:
+        return error(422, str(exc), rid)
+    conn = db.connect()
+    deadline.check()
+    candidates = db.list_rules(conn, query.jurisdiction, query.payment_type)
+    response, record = resolve(query, candidates, db.rules_version(conn),
+                               db.security_events_for(conn, query.jurisdiction))
+    partial = [safe_url(r["source_url"]) for r in conn.execute(
+        "SELECT source_url FROM documents WHERE status != 'complete'")]
+    if partial:   # R3: un documento leído a medias nunca respalda una decisión sin revisión
+        response["requires_human_review"] = True
+        response["review_reasons"].append("document_partially_read")
+        response["decision_trace"].append({"step": "partial_documents", "result": partial})
+        record["review_reasons"] = response["review_reasons"]
+    deadline.check()   # vencido el plazo se responde 504, nunca un resultado a medias
+    with conn:
+        conn.execute("INSERT INTO decisions (request_id, created_at, record) VALUES (?,?,?)",
+                     (rid, datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                      json.dumps(record, default=str)))
+    log("decision", request_id=rid, **record)
+    response["request_id"] = rid
+    return response

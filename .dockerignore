@@ -1,0 +1,9 @@
+.venv
+.git
+.claude
+tests
+eval
+*.db
+.env*
+EN-CURSO*
+__pycache__
