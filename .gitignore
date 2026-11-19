@@ -1,0 +1,18 @@
+
+# Registro del trabajo en marcha (skill en-curso): estado de la máquina, no historia. La
+# historia va a PROGRESO.md y a EN-CURSO-historial.md, que sí se versionan.
+EN-CURSO.md
+EN-CURSO-?.md
+EN-CURSO-historial.lock
+__pycache__/
+
+# Secretos y entorno local
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+*.db
+*.sqlite3
+.vercel/
+.pytest_cache/
