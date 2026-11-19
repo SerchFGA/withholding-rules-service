@@ -20,8 +20,8 @@
    "page": 11,
    "quote": "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
   },
-  "why": "Pub. 505 states a flat 24% rate on gambling winnings of more than $5,000, and 12,000 is above that threshold.",
-  "confidence": "high"
+  "why": "Pub. 505 states a flat 24% rate on gambling winnings of more than $5,000, and 12,000 is above that threshold. Caveat: page 11 limits this to 'certain kinds of gambling winnings' and lists the sources; the closed payment_type vocabulary has a single gambling value, so the kind of game cannot be expressed in the query.",
+  "confidence": "medium"
  },
  {
   "id": "us-gambling-large-amount",
@@ -44,8 +44,8 @@
    "page": 11,
    "quote": "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
   },
-  "why": "The publication states one flat rate with a minimum threshold and no upper bracket, so the rate does not change with the amount.",
-  "confidence": "high"
+  "why": "The publication states one flat rate with a minimum threshold and no upper bracket, so the rate does not change with the amount. Caveat: page 11 limits this to 'certain kinds of gambling winnings'; the query cannot say which kind.",
+  "confidence": "medium"
  },
  {
   "id": "us-gambling-resident-payee",
@@ -69,8 +69,8 @@
    "page": 11,
    "quote": "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
   },
-  "why": "The payee is neither a government entity nor a non-resident, so the answer is the 24% rate the document states for winnings above $5,000.",
-  "confidence": "high"
+  "why": "The payee is neither a government entity nor a non-resident, so the answer is the 24% rate the document states for winnings above $5,000. Caveat: page 11 limits this to 'certain kinds of gambling winnings'; the query cannot say which kind.",
+  "confidence": "medium"
  },
  {
   "id": "us-rollover-distribution",
@@ -117,8 +117,8 @@
    "page": 51,
    "quote": "mandatory 20% withholding applies to an eligible rollover distribution"
   },
-  "why": "Pub. 15 calls the 20% withholding on an eligible rollover distribution mandatory, which agrees with Pub. 505.",
-  "confidence": "high"
+  "why": "Pub. 15 calls the 20% withholding on an eligible rollover distribution mandatory, which agrees with Pub. 505. Caveat: the cited table row also says 'exempt for direct rollover'; whether the distribution is a direct rollover is not in the query.",
+  "confidence": "medium"
  },
  {
   "id": "us-pension-nonperiodic",
@@ -141,7 +141,7 @@
    "page": 11,
    "quote": "Tax will be withheld at a flat 10% rate on any nonperiodic payments you receive, unless you choose a different withholding rate."
   },
-  "why": "The document states 10% as the rate that applies by default; confidence is medium because the recipient may elect another rate on Form W-4R, which the query cannot express, so a reviewer could argue for a review flag.",
+  "why": "The document states 10% as the rate that applies by default; confidence is medium because the recipient may elect another rate on Form W-4R, which the query cannot express, so a reviewer could argue for a review flag. Caveat: 10% is the default; the same sentence lets the payee choose a different rate, which the query cannot express.",
   "confidence": "medium"
  },
  {
@@ -240,8 +240,8 @@
    "page": 11,
    "quote": "Gambling winnings of more than $5,000"
   },
-  "why": "5,000.01 is more than $5,000, so the flat 24% rate stated two lines above the threshold on the same page applies.",
-  "confidence": "high"
+  "why": "5,000.01 is more than $5,000, so the flat 24% rate stated two lines above the threshold on the same page applies. Caveat: page 11 limits this to 'certain kinds of gambling winnings'; the query cannot say which kind.",
+  "confidence": "medium"
  },
  {
   "id": "co-services-no-rate",

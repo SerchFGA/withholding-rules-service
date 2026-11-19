@@ -48,7 +48,9 @@ async def request_context(request: Request, call_next):
 def health():
     conn = db.connect()
     docs = conn.execute("SELECT COUNT(*) FROM documents").fetchone()[0]
-    return {"status": "ok", "documents": docs, "rules_version": db.rules_version(conn)}
+    found = [r[0] for r in conn.execute("SELECT DISTINCT jurisdiction FROM rules ORDER BY 1")]
+    return {"status": "ok", "documents": docs, "jurisdictions": found,
+            "rules_version": db.rules_version(conn)}
 
 
 @app.get("/")
@@ -78,9 +80,10 @@ async def ingest(request: Request, x_ingest_key: str | None = Header(default=Non
     try:
         fetched = await asyncio.to_thread(fetch.fetch, url, deadline)
     except fetch.FetchError as exc:
+        log("fetch_failed", request_id=rid, detail=str(exc))
         return error(502, "fetch_failed", rid, detail=str(exc))
     deadline.check()
-    conn, url = db.connect(), safe_url(url)   # desde aquí solo la URL sin usuario ni parámetros
+    conn, url = db.connect(), safe_url(url, keep_query=True)   # sin usuario ni credenciales
     known = db.find_document(conn, url)
     if known and known["content_sha256"] == fetched.sha256 and known["status"] == "complete":
         # Mismo contenido ya leído completo: ni registros duplicados ni gasto de modelo.
@@ -99,7 +102,7 @@ async def ingest(request: Request, x_ingest_key: str | None = Header(default=Non
         pages = await extract.transcribe(pages, images, deadline)
     deadline.check()
     events = validate.detect_injection(pages)
-    result = await extract.extract_claims(pages, url, deadline)
+    result = await extract.extract_claims(pages, safe_url(url), deadline)
     by_number = {p.number: p for p in pages}
     years, locale = validate.document_years(pages), parse.detect_number_locale(pages)
     rules, rejected = {}, Counter()

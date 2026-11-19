@@ -79,8 +79,9 @@ def _evaluate(amount: Decimal, rules: list[Rule], step, thresholds: list) -> tup
         if ok:
             (met if r in pool else rivals).append(r)
     step("threshold", f"{len(met)} of {len(pool)} deciding rules satisfied")
-    if not met:  # "no se retiene" apoyado en una regla dudosa, o con una condicional viva, no sale limpio
-        return _no_withholding(), _no_withholding(), flagged + _doubts(pool + rivals), pool + rivals + extra, [], []
+    if not met:  # sin regla firme no se afirma "no se retiene"; con ella, no sale limpio si hay dudas
+        out = _no_withholding() if pool[0].condition == "unconditional" else _unknown()
+        return out, out, flagged + _doubts(pool + rivals), pool + rivals + extra, [], []
     chosen, ids = met, [r.id for r in met]
     if len({(r.rate, r.flat_amount) for r in chosen}) > 1:
         # Tasas distintas a la vez: no se supone que el tramo alto reemplace al bajo.

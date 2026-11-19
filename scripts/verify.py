@@ -51,6 +51,9 @@ def run_tests(tmp):
     proc = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider",
                            f"--junitxml={report}"], cwd=ROOT, capture_output=True, text=True)
     say(proc.stdout.strip().splitlines()[-1] if proc.stdout.strip() else proc.stderr[-400:])
+    if not report.exists():   # pytest no llegó a correr: faltan las dependencias
+        say("Tests did not run. Install the dependencies first: pip install -r requirements-dev.txt")
+        sys.exit(2)
     results = {}
     for case in ET.parse(report).getroot().iter("testcase"):
         name = f"{case.get('classname', '').split('.')[-1]}.py::{case.get('name')}"
@@ -94,6 +97,8 @@ def main():
     corpus = json.loads((ROOT / "eval" / "corpus.json").read_text(encoding="utf-8"))
     cases = json.loads((ROOT / "eval" / "cases.json").read_text(encoding="utf-8"))
     live = {name: [] for name in REQUIREMENTS}   # fallos de las comprobaciones en vivo
+    checked = {"R2 model claims", "R3 deadline", "R6 contract", "R7 sensitive data"}   # las que tienen una
+    corpus_failures = []
 
     # En Windows SQLite puede seguir con el archivo abierto al salir: no es un fallo de la prueba.
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
@@ -119,10 +124,13 @@ def main():
                     f" rejected={sum((body.get('claims_rejected') or {}).values())} {took:5.1f}s")
                 if took > 120:
                     live["R3 deadline"].append(f"{doc['id']} took {took:.0f}s")
-                if resp.status_code != 200:
-                    live["R3 deadline" if resp.status_code == 504 else "R2 model claims"].append(
-                        f"{doc['id']} not ingested: {body.get('error')}")
+                if resp.status_code == 504 or body.get("status") == "partial":
+                    live["R3 deadline"].append(f"{doc['id']} not fully read: {body.get('status', body.get('error'))}")
+                elif resp.status_code != 200:   # la red o el sitio, no un requisito del servicio
+                    corpus_failures.append(f"{doc['id']}: {body.get('error')} {body.get('detail', '')}".strip())
             before = client.get("/v1/rules").json()["total"]
+            if before == 0:   # sin una sola regla validada no hay nada que demostrar
+                live["R2 model claims"].append("no rule was extracted and validated from any document")
             again = client.post("/v1/documents", json={"source_url": corpus[0]["source_url"]}, headers=headers).json()
             after = client.get("/v1/rules").json()["total"]
             if not again.get("cached") or again.get("model_calls") != 0 or before != after:
@@ -158,9 +166,13 @@ def main():
         failed = [t for t, good in mine.items() if not good] + live[name]
         good = bool(mine) and not failed
         ok = ok and good
-        say(f"{name:20} {'PASS' if good else 'FAIL'}  ({sum(mine.values())}/{len(mine)} tests"
-            + (", live checks ok)" if not live[name] else f"; {'; '.join(live[name])})"))
-    say(f"{'Accuracy':20} {passed}/{len(cases)} = {100 * passed / len(cases):.1f}% of evaluation queries match the documents")
+        note = "; ".join(live[name]) or ("live check ok" if name in checked else "no live check")
+        say(f"{name:20} {'PASS' if good else 'FAIL'}  ({sum(mine.values())}/{len(mine)} tests; {note})")
+    ok = ok and not corpus_failures
+    say(f"{'Corpus':20} {'PASS' if not corpus_failures else 'FAIL'}  ({len(corpus) - len(corpus_failures)}/{len(corpus)}"
+        f" documents downloaded and ingested" + ("" if not corpus_failures else "; " + "; ".join(corpus_failures)) + ")")
+    say(f"{'Accuracy':20} {passed}/{len(cases)} = {100 * passed / len(cases):.1f}% of evaluation queries match"
+        " the expected answer (informative: it does not change the exit code)")
     return 0 if ok else 1
 
 

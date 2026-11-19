@@ -47,17 +47,17 @@ def _check_url(url: str, resolver) -> str:
     except ValueError:
         target = None
     if not target:
-        raise FetchError(f"solo se admite https: {safe}")
+        raise FetchError(f"only https is accepted: {safe}")
     try:
         addresses = [ipaddress.ip_address(info[4][0]) for info in resolver(*target, type=socket.SOCK_STREAM)]
     except (OSError, ValueError):
         addresses = []
     if not addresses:
-        raise FetchError(f"no se pudo resolver el host: {safe}")
+        raise FetchError(f"host could not be resolved: {safe}")
     for ip in addresses:
         ip = getattr(ip, "ipv4_mapped", None) or ip
         if not ip.is_global or ip.is_multicast:   # privadas, loopback, link-local, reservadas, CGNAT
-            raise FetchError(f"el host resuelve a una dirección interna: {safe}")
+            raise FetchError(f"host resolves to an internal address: {safe}")
     return safe
 
 
@@ -81,11 +81,11 @@ def fetch(url: str, deadline: Deadline, client: httpx.Client | None = None, reso
                     deadline.check()
                     content += chunk
                     if len(content) > MAX_BYTES:   # se corta al leer, sin esperar al final
-                        raise FetchError(f"el documento pasa de {MAX_BYTES} bytes: {safe}")
+                        raise FetchError(f"document is larger than {MAX_BYTES} bytes: {safe}")
                 content_type = response.headers.get("content-type", "")
                 return Fetched(url, bytes(content), content_type, hashlib.sha256(content).hexdigest())
         except (httpx.HTTPError, httpx.InvalidURL) as exc:
             failure = type(exc).__name__   # el texto de httpx puede traer la URL entera
         deadline.check()   # fuera del except: la excepción original no queda encadenada
-        raise FetchError(f"fallo de red ({failure}): {safe}")
-    raise FetchError(f"más de {MAX_REDIRECTS} redirecciones: {_safe(url)}")
+        raise FetchError(f"network failure ({failure}): {safe}")
+    raise FetchError(f"more than {MAX_REDIRECTS} redirects: {_safe(url)}")

@@ -5,22 +5,23 @@ rate", and flags what a human must decide. Live: <https://withholding.pixanai.co
 and Spanish). Repo: <https://github.com/SerchFGA/withholding-rules-service>.
 
 **How it works.** The model is used once, at ingestion, only to read: it returns structured claims
-from a closed vocabulary. Code validates every claim against the source and discards what it cannot
-verify. `GET /v1/resolve` never calls a model: it is a lookup over validated rules plus the three
+from a closed vocabulary. Code checks every claim against the source (quote, page, rate, amounts, tax
+year, jurisdiction) and discards what it cannot verify. Two fields remain the model's label, checked
+only against the vocabulary: `payment_type` and `condition`. `GET /v1/resolve` never calls a model: it is a lookup over validated rules plus the three
 hard rules, in a fixed order, in `app/resolve.py`.
 
 ## Run it
 
 ```bash
-python -m venv .venv && .venv/bin/pip install -r requirements-dev.txt   # Windows: .venv\Scripts\pip
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt   # Windows: .venv\Scripts\pip
 cp .env.example .env        # set ANTHROPIC_API_KEY (ingestion calls Claude) and INGEST_KEY
-make verify                 # or: python scripts/verify.py
+make verify                 # uses .venv automatically; without make: .venv/bin/python scripts/verify.py
 make run                    # http://localhost:8000
 ```
 
 `make verify` starts from an empty SQLite file, ingests the five documents over the network with the
-real model, runs 291 tests and the 27-query evaluation set, and prints PASS/FAIL per R1 to R7 plus
-accuracy. It needs **your own `ANTHROPIC_API_KEY`**: no key and no recorded model answer is in this
+real model, runs 295 tests and the 27-query evaluation set, and prints PASS/FAIL per R1 to R7, a
+corpus line and accuracy. It needs **your own `ANTHROPIC_API_KEY`**: no key and no recorded model answer is in this
 repository, the image or any prompt (recorded answers would be seeding).
 
 | Endpoint | Purpose |
@@ -55,9 +56,8 @@ Rel(fetch, pubs, "download")
 Rel(api, extract, "pages as data")
 Rel(extract, llm, "claims")
 Rel(api, validate, "every claim")
-Rel(validate, db, "valid rules only")
 Rel(api, resolve, "query + rules")
-Rel(resolve, db, "read")
+Rel(api, db, "valid rules in, rules and decisions out")
 ```
 
 ## Decisions and what I rejected
@@ -75,8 +75,8 @@ Rel(resolve, db, "read")
 
 - **Production, from an empty database:** five documents ingested by the pipeline in 61 s total (slowest 21 s), 38 rules, 4 claims discarded. Evaluation: **25/27**. Both misses return a safe answer with review: `services` adds a second review reason, and supplemental wages reports `conflicting_rules` (22% optional, 37% mandatory).
 - **Extraction varies between runs** by one or two cases; effort `medium` reduced it. Expect accuracy to move.
-- **Ontario:** the URL in the brief (`t4032on-1-26e.pdf`) returns 404; I use the current official file, `t4032-on-1-26e.pdf`. canada.ca drops some automated clients: from my laptop it times out, so there `make verify` reports R2 FAIL for that one document. From the server it downloads.
-- **Designed, not exercised:** transcription of scanned pages against the real model (simulated model only); the DNS-rebinding window in `fetch.py`; HTML with unclosed `header`/`nav` tags.
+- **Ontario:** the URL in the brief (`t4032on-1-26e.pdf`) returns 404; I use the current official file, `t4032-on-1-26e.pdf`. canada.ca drops some automated clients: from my laptop it times out, so there `make verify` reports the corpus line as FAIL for that one document. From the server it downloads.
+- **Designed, not exercised:** transcription of scanned pages against the real model (simulated model only); the "higher of percentage or flat amount" policy on real data (no live rule states both); the DNS-rebinding window in `fetch.py`; HTML with unclosed `header`/`nav` tags.
 
 ## Something I think is wrong
 
@@ -84,4 +84,4 @@ Rel(resolve, db, "read")
 2. **Why:** they do not. Pub. 505 p. 12 keeps 24% backup withholding below the $5,000 gambling threshold; the social security figure ($184,500) is a ceiling, where "below: do not withhold" is backwards; no document states 30% as a withholding rate for non-residents (its one appearance, Pub. 505 p. 28, is an estimated-tax factor).
 3. **Alternative:** treat thresholds as extracted data with a direction (floor or cap) and conditions, and keep hard rules as guardrails that must cite a publication or be labelled as client policy.
 4. **If the client insisted:** I would ship it as specified, which is what this does, but keep flagging for review every case where the document contradicts the rule, and report those cases monthly.
-5. **Evidence:** `eval/notas/` (reading notes per document) and the `why` field of each case in `eval/cases.json`.
+5. **Evidence:** the `why` field of each case in `eval/cases.json`, with page and verbatim quote.

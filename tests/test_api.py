@@ -278,3 +278,29 @@ def test_country_level_rule_applies_to_a_subdivision_query(service):
     assert service.get("/v1/resolve", params=QUERY).json()["outcome"] == WITHHOLD_24
     other = service.get("/v1/resolve", params=dict(QUERY, jurisdiction="CA-ON")).json()
     assert other["outcome"]["withholding_applies"] is None
+
+
+# Segunda revisión independiente (2026-11-19).
+
+def test_query_string_that_identifies_the_document_is_kept(service):
+    # Muchos sitios oficiales distinguen documentos por parámetro: no pueden pisarse entre sí.
+    for doc_id in ("101", "202"):
+        url = f"https://www.irs.gov/act.php?id={doc_id}&token=SECRETTOKEN#frag"
+        service.post("/v1/documents", json={"source_url": url}, headers={"X-Ingest-Key": KEY})
+    urls = [d["source_url"] for d in service.get("/v1/documents").json()["items"]]
+    assert urls == ["https://www.irs.gov/act.php?id=101", "https://www.irs.gov/act.php?id=202"]
+
+
+def test_health_lists_the_jurisdictions_that_have_rules(service):
+    assert service.get("/health").json()["jurisdictions"] == []
+    service.ingest()
+    assert service.get("/health").json()["jurisdictions"] == ["US-FED"]
+
+
+def test_fetch_failure_is_reported_in_english_and_logged(service, monkeypatch, capsys):
+    def failing(url, deadline, **_):
+        raise fetch.FetchError("network failure (ConnectError): https://www.irs.gov/x.pdf")
+    monkeypatch.setattr(fetch, "fetch", failing)
+    response = service.ingest()
+    assert response.status_code == 502 and response.json()["error"] == "fetch_failed"
+    assert '"event": "fetch_failed"' in capsys.readouterr().out

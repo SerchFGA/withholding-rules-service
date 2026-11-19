@@ -87,8 +87,7 @@ const D = {en: {
     optional_withholding_method: 'The rate is an optional withholding method.', conflicting_rules: 'There are rules that contradict each other.',
     condition_not_evaluable: 'The rule has a condition the service cannot check.', source_page_was_scanned: 'The source was a scanned page.',
     unsupported_rule_structure: 'There is a cap, bracket or table the service does not compute.',
-    document_partially_read: 'A document was read only in part.', payee_type_not_provided: 'The payee type was not provided.',
-    untrusted_instruction_in_source: 'A source document contains an instruction aimed at the system. It was ignored.'}
+    document_partially_read: 'A document was read only in part.', payee_type_not_provided: 'The payee type was not provided.'}
 }, es: {
   title: 'Servicio de reglas de retención', lang: 'Idioma', h_err: '✕ Estado del servicio no disponible', q_h: 'Consultar un pago',
   h_ok: '{0} documentos ingeridos · versión de reglas {1}', f_pt: 'Tipo de pago', f_j: 'Jurisdicción', f_pe: 'Tipo de beneficiario', f_am: 'Importe',
@@ -122,8 +121,7 @@ const D = {en: {
     optional_withholding_method: 'La tasa es un método de retención opcional.', conflicting_rules: 'Hay reglas que se contradicen.',
     condition_not_evaluable: 'La regla tiene una condición que el servicio no puede comprobar.',
     unsupported_rule_structure: 'Hay un tope, tramo o tabla que el servicio no calcula.', source_page_was_scanned: 'La fuente era una página escaneada.',
-    document_partially_read: 'Un documento se leyó solo en parte.', payee_type_not_provided: 'No se indicó el tipo de beneficiario.',
-    untrusted_instruction_in_source: 'Un documento fuente contiene una instrucción dirigida al sistema. Se ignoró.'}
+    document_partially_read: 'Un documento se leyó solo en parte.', payee_type_not_provided: 'No se indicó el tipo de beneficiario.'}
 }};
 const S = {off: 0}, $ = id => document.getElementById(id);
 let lang = ''; try { lang = localStorage.getItem('lang') || ''; } catch (e) { lang = ''; }
@@ -223,7 +221,11 @@ async function loadRules() {
   for (const [id, name] of [['fj', 'jurisdiction'], ['fp', 'payment_type']]) if ($(id).value) q.set(name, $(id).value);
   S.rules = await api('/v1/rules?' + q); renderRules();
 }
-async function loadDocs() { [S.health, S.docs] = await Promise.all([api('/health'), api('/v1/documents')]); renderDocs(); }
+async function loadDocs() {
+  [S.health, S.docs] = await Promise.all([api('/health'), api('/v1/documents')]);
+  for (const j of (S.health.body || {}).jurisdictions || []) if (!JU.includes(j)) JU.push(j);  // a new document may bring a new one
+  fill('ju', JU, 'jur'); fill('fj', JU, 'jur', 'all'); renderDocs();
+}
 $('lang').addEventListener('change', e => { lang = e.target.value; try { localStorage.setItem('lang', lang); } catch (err) { /* sin almacén */ } render(); });
 $('qf').addEventListener('submit', async e => {
   e.preventDefault(); const am = $('am').value.trim(), yr = Number($('yr').value);

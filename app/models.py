@@ -9,7 +9,6 @@ from decimal import Decimal
 CONTRACT_VERSION = "1.0"
 REQUEST_BUDGET_SECONDS = 120.0
 
-JURISDICTIONS = ("US-FED", "CA-ON", "CO")  # las del corpus; sirven de ejemplo y para la interfaz
 # Un documento nuevo puede traer otra jurisdicción: se valida la forma (país ISO y subdivisión
 # opcional) y, si el dominio es conocido, que el país coincida.
 JURISDICTION_PATTERN = r"^[A-Z]{2}(-[A-Z0-9]{2,4})?$"
@@ -21,7 +20,6 @@ PAYMENT_TYPES = (
     "unemployment_compensation", "sick_pay", "interest", "dividends",
     "social_security_tax", "medicare_tax", "cpp_contribution", "ei_premium", "other",
 )
-BASES = ("percent_of_payment", "flat_amount", "none")
 
 # Qué tipo de regla encontró el modelo. Solo "rate" se resuelve; lo demás va a revisión.
 RULE_KINDS = ("rate", "unsupported_cap", "unsupported_bracket", "unsupported_table")
@@ -35,7 +33,7 @@ REVIEW_REASONS = (
     "no_rate_in_publication", "no_rule_for_tax_year", "tax_year_ambiguous_resolved_to_later",
     "conditional_on_payee_tin", "optional_withholding_method", "condition_not_evaluable",
     "conflicting_rules", "unsupported_rule_structure", "source_page_was_scanned",
-    "payee_type_not_provided", "untrusted_instruction_in_source", "document_partially_read",
+    "payee_type_not_provided", "document_partially_read",
 )
 
 

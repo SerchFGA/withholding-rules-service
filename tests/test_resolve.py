@@ -311,9 +311,10 @@ def test_unsupported_rule_next_to_an_unmet_threshold_forces_review():
     ({"source_kind": "vision"}, "source_page_was_scanned"),
 ])
 def test_unmet_threshold_of_a_conditional_or_scanned_rule_still_needs_review(kwargs, reason):
-    # "No se retiene" apoyado en una regla dudosa no puede salir limpio.
+    # "No se retiene" apoyado en una regla dudosa no puede salir limpio. Desde la segunda
+    # revisión, si la única regla es condicional ni siquiera se afirma: es desconocido.
     resp, _ = run([rule(1, min_amount="999999999", **kwargs)], payee="resident")
-    assert resp["outcome"] == NO_WITHHOLDING
+    assert resp["outcome"] == (UNKNOWN if "condition" in kwargs else NO_WITHHOLDING)
     assert resp["review_reasons"] == [reason]
 
 
@@ -375,3 +376,15 @@ def test_below_the_unconditional_threshold_a_conditional_rule_asks_for_review():
 def test_only_conditional_rules_still_return_the_rate_with_review():
     resp, _ = run([rule(1, condition="requires_missing_tin")])
     assert resp["outcome"]["rate"] == "0.2400" and resp["review_reasons"] == ["conditional_on_payee_tin"]
+
+
+# Segunda revisión independiente (2026-11-19).
+
+def test_unmet_threshold_of_only_conditional_rules_is_unknown_not_no_withholding():
+    # Caso real: el aporte CPP de Ontario quedó guardado como condicional, con la exención
+    # anual como "umbral". Un "no se retiene" apoyado solo en eso sería afirmar de más.
+    resp, _ = run([rule(1, rate="0.0595", min_amount="3500", condition="other_condition")],
+                  amount="1300", payee="resident")
+    assert resp["outcome"] == UNKNOWN and policy_core(resp) == UNKNOWN
+    assert resp["review_reasons"] == ["condition_not_evaluable"]
+    assert [p["quote"] for p in resp["provenance"]] == ["quote 1"]
