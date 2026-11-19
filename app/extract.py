@@ -46,7 +46,8 @@ brackets that add an amount plus a percentage, "unsupported_table" for lookup ta
 - tax_year: the tax year the rule applies to.
 - condition: "unconditional" unless the rule depends on something: "requires_missing_tin" when \
 it applies because the payee gave no taxpayer identification number, "optional_method" when it \
-is an optional or elective method, "other_condition" for any other dependency.
+is an optional or elective method, "other_condition" for any other dependency, "qualified" when \
+the rule is stated plainly but with a caveat (certain kinds, generally, unless, except).
 - rate: decimal string with four decimals (24% is "0.2400"), or null.
 - flat_amount: fixed withholding amount as a plain decimal string, or null.
 - min_amount: payment threshold as a plain decimal string, or null. threshold_inclusive is true \

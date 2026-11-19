@@ -12,15 +12,17 @@
    "withholding_applies": true,
    "rate": "0.2400",
    "basis": "percent_of_payment",
-   "requires_human_review": false,
-   "review_reasons": []
+   "requires_human_review": true,
+   "review_reasons": [
+    "condition_not_evaluable"
+   ]
   },
   "source": {
    "document": "p505",
    "page": 11,
    "quote": "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
   },
-  "why": "Pub. 505 states a flat 24% rate on gambling winnings of more than $5,000, and 12,000 is above that threshold. Caveat: page 11 limits this to 'certain kinds of gambling winnings' and lists the sources; the closed payment_type vocabulary has a single gambling value, so the kind of game cannot be expressed in the query.",
+  "why": "Pub. 505 states a flat 24% rate on gambling winnings of more than $5,000, and 12,000 is above that threshold. Caveat: page 11 limits this to 'certain kinds of gambling winnings' and lists the sources; the closed payment_type vocabulary has a single gambling value, so the kind of game cannot be expressed in the query. Because the cited sentence carries that caveat, the expected answer is the stated rate WITH human review (condition_not_evaluable): the service must not present a qualified statement as an unconditional decision.",
   "confidence": "medium"
  },
  {
@@ -36,15 +38,17 @@
    "withholding_applies": true,
    "rate": "0.2400",
    "basis": "percent_of_payment",
-   "requires_human_review": false,
-   "review_reasons": []
+   "requires_human_review": true,
+   "review_reasons": [
+    "condition_not_evaluable"
+   ]
   },
   "source": {
    "document": "p505",
    "page": 11,
    "quote": "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
   },
-  "why": "The publication states one flat rate with a minimum threshold and no upper bracket, so the rate does not change with the amount. Caveat: page 11 limits this to 'certain kinds of gambling winnings'; the query cannot say which kind.",
+  "why": "The publication states one flat rate with a minimum threshold and no upper bracket, so the rate does not change with the amount. Caveat: page 11 limits this to 'certain kinds of gambling winnings'; the query cannot say which kind. Because the cited sentence carries that caveat, the expected answer is the stated rate WITH human review (condition_not_evaluable): the service must not present a qualified statement as an unconditional decision.",
   "confidence": "medium"
  },
  {
@@ -61,15 +65,17 @@
    "withholding_applies": true,
    "rate": "0.2400",
    "basis": "percent_of_payment",
-   "requires_human_review": false,
-   "review_reasons": []
+   "requires_human_review": true,
+   "review_reasons": [
+    "condition_not_evaluable"
+   ]
   },
   "source": {
    "document": "p505",
    "page": 11,
    "quote": "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
   },
-  "why": "The payee is neither a government entity nor a non-resident, so the answer is the 24% rate the document states for winnings above $5,000. Caveat: page 11 limits this to 'certain kinds of gambling winnings'; the query cannot say which kind.",
+  "why": "The payee is neither a government entity nor a non-resident, so the answer is the 24% rate the document states for winnings above $5,000. Caveat: page 11 limits this to 'certain kinds of gambling winnings'; the query cannot say which kind. Because the cited sentence carries that caveat, the expected answer is the stated rate WITH human review (condition_not_evaluable): the service must not present a qualified statement as an unconditional decision.",
   "confidence": "medium"
  },
  {
@@ -133,15 +139,17 @@
    "withholding_applies": true,
    "rate": "0.1000",
    "basis": "percent_of_payment",
-   "requires_human_review": false,
-   "review_reasons": []
+   "requires_human_review": true,
+   "review_reasons": [
+    "condition_not_evaluable"
+   ]
   },
   "source": {
    "document": "p505",
    "page": 11,
    "quote": "Tax will be withheld at a flat 10% rate on any nonperiodic payments you receive, unless you choose a different withholding rate."
   },
-  "why": "The document states 10% as the rate that applies by default; confidence is medium because the recipient may elect another rate on Form W-4R, which the query cannot express, so a reviewer could argue for a review flag. Caveat: 10% is the default; the same sentence lets the payee choose a different rate, which the query cannot express.",
+  "why": "The document states 10% as the rate that applies by default; confidence is medium because the recipient may elect another rate on Form W-4R, which the query cannot express, so a reviewer could argue for a review flag. Caveat: 10% is the default; the same sentence lets the payee choose a different rate, which the query cannot express. Because the cited sentence carries that caveat, the expected answer is the stated rate WITH human review (condition_not_evaluable): the service must not present a qualified statement as an unconditional decision.",
   "confidence": "medium"
  },
  {
@@ -208,6 +216,7 @@
    "basis": "none",
    "requires_human_review": true,
    "review_reasons": [
+    "condition_not_evaluable",
     "conditional_on_payee_tin"
    ]
   },
@@ -216,7 +225,7 @@
    "page": 11,
    "quote": "Gambling winnings of more than $5,000"
   },
-  "why": "Regular withholding applies only to gambling winnings of more than $5,000 (page 11), and page 2 states a 24% rule from $2,000 for bingo, slot machines and keno. 1,500 is below both, so the threshold hard rule gives 'do not withhold'. Page 12 adds that backup withholding at 24% applies to any gambling winnings when the payee gives no taxpayer identification number, which the query cannot tell: the answer is flagged for review. This case replaces two earlier ones at 4,999.99 and 5,000: between $2,000 and $5,000 the publication's two thresholds apply to different kinds of gambling that the closed payment_type vocabulary does not separate, so no single expected answer is defensible there.",
+  "why": "Regular withholding applies only to gambling winnings of more than $5,000 (page 11), and page 2 states a 24% rule from $2,000 for bingo, slot machines and keno. 1,500 is below both, so the threshold hard rule gives 'do not withhold'. Page 12 adds that backup withholding at 24% applies to any gambling winnings when the payee gives no taxpayer identification number, which the query cannot tell: the answer is flagged for review. This case replaces two earlier ones at 4,999.99 and 5,000: between $2,000 and $5,000 the publication's two thresholds apply to different kinds of gambling that the closed payment_type vocabulary does not separate, so no single expected answer is defensible there. The threshold rule itself says 'certain kinds of gambling winnings', which adds condition_not_evaluable.",
   "confidence": "medium"
  },
  {
@@ -232,15 +241,17 @@
    "withholding_applies": true,
    "rate": "0.2400",
    "basis": "percent_of_payment",
-   "requires_human_review": false,
-   "review_reasons": []
+   "requires_human_review": true,
+   "review_reasons": [
+    "condition_not_evaluable"
+   ]
   },
   "source": {
    "document": "p505",
    "page": 11,
    "quote": "Gambling winnings of more than $5,000"
   },
-  "why": "5,000.01 is more than $5,000, so the flat 24% rate stated two lines above the threshold on the same page applies. Caveat: page 11 limits this to 'certain kinds of gambling winnings'; the query cannot say which kind.",
+  "why": "5,000.01 is more than $5,000, so the flat 24% rate stated two lines above the threshold on the same page applies. Caveat: page 11 limits this to 'certain kinds of gambling winnings'; the query cannot say which kind. Because the cited sentence carries that caveat, the expected answer is the stated rate WITH human review (condition_not_evaluable): the service must not present a qualified statement as an unconditional decision.",
   "confidence": "medium"
  },
  {
@@ -611,15 +622,17 @@
    "withholding_applies": true,
    "rate": "0.3000",
    "basis": "percent_of_payment",
-   "requires_human_review": false,
-   "review_reasons": []
+   "requires_human_review": true,
+   "review_reasons": [
+    "condition_not_evaluable"
+   ]
   },
   "source": {
    "document": "p505",
    "page": 11,
    "quote": "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
   },
-  "why": "The document rate is 0.2400, below the 0.3000 minimum that the hard rule sets for non-residents, so the minimum wins.",
+  "why": "The document rate is 0.2400, below the 0.3000 minimum that the hard rule sets for non-residents, so the minimum wins. The 30% floor is decided by the hard rule in code; the review flag comes from the document rule it was compared with, whose sentence says 'certain kinds of gambling winnings'.",
   "confidence": "high"
  },
  {
@@ -638,7 +651,8 @@
    "requires_human_review": true,
    "review_reasons": [
     "no_rule_for_tax_year",
-    "tax_year_ambiguous_resolved_to_later"
+    "tax_year_ambiguous_resolved_to_later",
+    "condition_not_evaluable"
    ]
   },
   "expected_policy": {
@@ -651,7 +665,7 @@
    "page": 11,
    "quote": "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
   },
-  "why": "Pub. 505 is for use in 2026 and states nothing for 2025, so the unadjusted answer is unknown; client policy resolves to the later year (2026, 24%) and flags the case.",
+  "why": "Pub. 505 is for use in 2026 and states nothing for 2025, so the unadjusted answer is unknown; client policy resolves to the later year (2026, 24%) and flags the case. The 2026 rule used by the policy-adjusted outcome says 'certain kinds of gambling winnings', which adds condition_not_evaluable.",
   "confidence": "high"
  },
  {

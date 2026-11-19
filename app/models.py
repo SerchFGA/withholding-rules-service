@@ -8,6 +8,7 @@ from decimal import Decimal
 
 CONTRACT_VERSION = "1.0"
 REQUEST_BUDGET_SECONDS = 120.0
+PIPELINE_VERSION = "2"   # sube al cambiar el prompt o el validador: obliga a releer los documentos
 
 # Un documento nuevo puede traer otra jurisdicción: se valida la forma (país ISO y subdivisión
 # opcional) y, si el dominio es conocido, que el país coincida.
@@ -24,7 +25,9 @@ PAYMENT_TYPES = (
 # Qué tipo de regla encontró el modelo. Solo "rate" se resuelve; lo demás va a revisión.
 RULE_KINDS = ("rate", "unsupported_cap", "unsupported_bracket", "unsupported_table")
 # De qué depende la regla. Todo lo que no sea "unconditional" obliga a revisión humana.
-CONDITIONS = ("unconditional", "requires_missing_tin", "optional_method", "other_condition")
+# "qualified": firme, pero su cita trae una salvedad ("certain kinds", "unless you choose").
+CONDITIONS = ("unconditional", "qualified", "requires_missing_tin", "optional_method", "other_condition")
+FIRM_CONDITIONS = ("unconditional", "qualified")   # deciden; las demás solo si no hay ninguna firme
 
 NON_RESIDENT_MIN_RATE = Decimal("0.3000")  # regla dura del enunciado, no sale del corpus
 

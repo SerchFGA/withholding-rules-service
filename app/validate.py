@@ -4,7 +4,7 @@ import unicodedata
 from decimal import Decimal
 from urllib.parse import urlsplit
 
-from app.models import (CONDITIONS, HOST_COUNTRY, JURISDICTION_PATTERN, PAYMENT_TYPES,
+from app.models import (CONDITIONS, FIRM_CONDITIONS, HOST_COUNTRY, JURISDICTION_PATTERN, PAYMENT_TYPES,
                         RULE_KINDS, Page)
 
 MIN_QUOTE_CHARS = 20
@@ -19,6 +19,7 @@ _YEAR = re.compile(r"(?<![\d$])(?:20\d\d|2100)(?!\d|[.,]\d)")
 _WITHHOLDING = re.compile(r"withh|deduct|reten|contribution|premium")
 # Palabras que anuncian un umbral: si están junto a una regla firme que no declara umbral, se descarta.
 _THRESHOLD = re.compile(r"(?:more than|at least|in excess of|exceed\w*|over|más de|superior\w* a)\s+\$\s?\d")
+_CAVEAT = re.compile(r"\b(?:unless|except|exempt|certain|generally|optional|elect|salvo|excepto|a menos que)")
 _AMOUNT = re.compile(r"[0-9]+(?:\.[0-9]+)?")
 _RATE = re.compile(r"[0-9]+(?:\.[0-9]{1,4})?")  # el contrato da cuatro decimales
 _PERCENT = r"\s*(?:%|percent|per cent|por ciento)"
@@ -117,7 +118,7 @@ def validate_claim(claim: dict, pages: dict[int, Page], doc_years: set[int],
     window = body[max(0, at - CONTEXT_CHARS):at + len(quote) + CONTEXT_CHARS]
     if not _WITHHOLDING.search(window):
         return None, "not_a_withholding_statement"
-    if (c["kind"] == "rate" and c["condition"] == "unconditional" and c["min_amount"] is None
+    if (c["kind"] == "rate" and c["condition"] in FIRM_CONDITIONS and c["min_amount"] is None
             and _THRESHOLD.search(window)):
         return None, "threshold_nearby_not_claimed"
     rate, flat, low = (None if c[k] is None else Decimal(c[k])
@@ -127,6 +128,8 @@ def validate_claim(claim: dict, pages: dict[int, Page], doc_years: set[int],
     if (rate is not None and not (0 < rate <= 1 and _rate_in(quote, rate))) or not all(
             v is None or _amount_in(quote, v, number_locale) for v in (flat, low)):
         return None, "number_not_in_quote"
+    if c["condition"] == "unconditional" and _CAVEAT.search(quote):
+        c = {**c, "condition": "qualified"}   # la etiqueta es del modelo; la salvedad está en el texto
     rule = {k: c[k] for k in ("jurisdiction", "payment_type", "tax_year", "kind", "condition",
                               "flat_amount", "min_amount", "page", "quote")}
     return {**rule, "rate": None if rate is None else format(rate, ".4f"),

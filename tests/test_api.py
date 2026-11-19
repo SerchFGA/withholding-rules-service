@@ -205,13 +205,13 @@ def test_logs_alone_explain_ingest_and_decision(service, capsys):   # R1, R7
     events = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line.startswith("{")]
     stored = [e for e in events if e["event"] == "rule_stored"]
     assert len(stored) == 1 and stored[0]["rate"] == "0.2400" and stored[0]["page"] == 1
-    assert stored[0]["model_version"] == "fake-model-1" and stored[0]["min_amount"] == "5000"
+    assert stored[0]["model_version"] == "fake-model-1+p" + main.PIPELINE_VERSION and stored[0]["min_amount"] == "5000"
     assert "more than $5,000" in stored[0]["quote"] and len(stored[0]["sha256"]) == 64
     rejected = [e for e in events if e["event"] == "claim_rejected"]
     assert len(rejected) == 1 and rejected[0]["reason"] == "quote_not_in_source"
     used = next(e for e in events if e["event"] == "decision")["rules_used"]
     assert used == [{"id": used[0]["id"], "source_url": URL, "page": 1, "rate": "0.2400",
-                     "min_amount": "5000", "model_version": "fake-model-1"}]
+                     "min_amount": "5000", "model_version": "fake-model-1+p" + main.PIPELINE_VERSION}]
 
 
 def test_injection_in_a_document_without_rules_is_still_recorded(service):   # R5
@@ -304,3 +304,13 @@ def test_fetch_failure_is_reported_in_english_and_logged(service, monkeypatch, c
     response = service.ingest()
     assert response.status_code == 502 and response.json()["error"] == "fetch_failed"
     assert '"event": "fetch_failed"' in capsys.readouterr().out
+
+
+def test_a_new_pipeline_version_re_reads_documents_and_is_recorded(service, monkeypatch, capsys):   # R6, R7
+    # Cambiar el prompt o el validador invalida lo extraído antes: se vuelve a leer una vez.
+    assert service.ingest().json()["model_version"] == "fake-model-1+p" + main.PIPELINE_VERSION
+    assert service.ingest().json()["cached"] is True
+    monkeypatch.setattr(main, "PIPELINE_VERSION", "next")
+    again = service.ingest().json()
+    assert again["cached"] is False and again["model_version"] == "fake-model-1+pnext"
+    assert service.state["model_calls"] == 2 and service.ingest().json()["cached"] is True

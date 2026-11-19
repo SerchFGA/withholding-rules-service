@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from app import db, extract, fetch, parse, validate
 from app.logs import log, safe_url
-from app.models import (JURISDICTION_PATTERN, PAYEE_TYPES, PAYMENT_TYPES, Deadline,
+from app.models import (JURISDICTION_PATTERN, PAYEE_TYPES, PAYMENT_TYPES, PIPELINE_VERSION, Deadline,
                         DeadlineExceeded, Query)
 from app.resolve import resolve
 
@@ -85,7 +85,8 @@ async def ingest(request: Request, x_ingest_key: str | None = Header(default=Non
     deadline.check()
     conn, url = db.connect(), safe_url(url, keep_query=True)   # sin usuario ni credenciales
     known = db.find_document(conn, url)
-    if known and known["content_sha256"] == fetched.sha256 and known["status"] == "complete":
+    if (known and known["content_sha256"] == fetched.sha256 and known["status"] == "complete"
+            and (known["model_version"] or "").endswith(f"+p{PIPELINE_VERSION}")):
         # Mismo contenido ya leído completo: ni registros duplicados ni gasto de modelo.
         log("ingest_cached", request_id=rid, source_url=url, sha256=fetched.sha256)
         return {"source_url": url, "content_sha256": fetched.sha256, "status": "complete",
@@ -103,6 +104,7 @@ async def ingest(request: Request, x_ingest_key: str | None = Header(default=Non
     deadline.check()
     events = validate.detect_injection(pages)
     result = await extract.extract_claims(pages, safe_url(url), deadline)
+    result.model_version += f"+p{PIPELINE_VERSION}"   # modelo y versión del proceso que leyó el documento
     by_number = {p.number: p for p in pages}
     years, locale = validate.document_years(pages), parse.detect_number_locale(pages)
     rules, rejected = {}, Counter()

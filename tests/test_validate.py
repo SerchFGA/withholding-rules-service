@@ -106,7 +106,7 @@ def test_good_gambling_rule_is_accepted():
     assert reason is None
     assert rule == {
         "jurisdiction": "US-FED", "payment_type": "gambling_winnings", "tax_year": 2026,
-        "kind": "rate", "condition": "unconditional", "rate": "0.2400",
+        "kind": "rate", "condition": "qualified", "rate": "0.2400",  # la cita dice "certain kinds"
         "flat_amount": None, "min_amount": "5000.00", "threshold_inclusive": False,
         "page": 11, "quote": GAMBLING_QUOTE, "source_kind": "text",
     }
@@ -414,3 +414,29 @@ def test_amount_written_in_millions_matches(wording):
     rule, reason = run(make_claim(quote=text, rate="0.3700", min_amount="1000000", condition="other_condition"),
                        text=text)
     assert reason is None
+
+
+# Segunda revisión (2026-11-19): la etiqueta "unconditional" es del modelo. Si la propia cita
+# trae una salvedad, el código no la deja pasar como firme sin más.
+
+@pytest.mark.parametrize("sentence", [
+    "Tax will be withheld at a flat 24% rate on any payment in 2026, unless you choose a different withholding rate.",
+    "Income tax is withheld at a flat 24% rate from certain kinds of payments made in 2026.",
+    "Mandatory 24% withholding applies in 2026; exempt for direct rollover.",
+    "Generally, you must withhold 24% of these payments in 2026.",
+])
+def test_quote_with_a_caveat_is_stored_as_qualified_not_unconditional(sentence):
+    rule, reason = run(make_claim(quote=sentence, min_amount=None), text=sentence)
+    assert reason is None and rule["condition"] == "qualified"
+
+
+def test_quote_without_a_caveat_stays_unconditional():
+    sentence = "For 2026, the Medicare tax rate is 1.45% (amount withheld) for the employee."
+    rule, reason = run(make_claim(quote=sentence, rate="0.0145", min_amount=None), text=sentence)
+    assert reason is None and rule["condition"] == "unconditional"
+
+
+def test_a_conditional_label_is_never_upgraded_or_changed():
+    sentence = "Generally, you must withhold 24% of these payments in 2026 if the payee gives no TIN."
+    rule, _ = run(make_claim(quote=sentence, min_amount=None, condition="requires_missing_tin"), text=sentence)
+    assert rule["condition"] == "requires_missing_tin"

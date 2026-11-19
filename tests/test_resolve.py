@@ -388,3 +388,20 @@ def test_unmet_threshold_of_only_conditional_rules_is_unknown_not_no_withholding
     assert resp["outcome"] == UNKNOWN and policy_core(resp) == UNKNOWN
     assert resp["review_reasons"] == ["condition_not_evaluable"]
     assert [p["quote"] for p in resp["provenance"]] == ["quote 1"]
+
+
+def test_qualified_rule_decides_like_a_firm_one_but_always_asks_for_review():
+    # "Certain kinds of gambling winnings": la regla aplica su umbral, pero una persona mira.
+    rules = [rule(1, min_amount="5000", condition="qualified")]
+    above, _ = run(rules, amount="12000")
+    assert above["outcome"]["rate"] == "0.2400" and above["review_reasons"] == ["condition_not_evaluable"]
+    below, _ = run(rules, amount="1500", payee="resident")
+    assert below["outcome"] == NO_WITHHOLDING and below["review_reasons"] == ["condition_not_evaluable"]
+
+
+def test_qualified_rule_adds_no_doubt_when_a_plain_rule_states_the_same_rate():
+    # Si otra cita da la misma tasa sin salvedad, la salvedad de esta no aporta duda.
+    rules = [rule(1, rate="0.0163"), rule(2, rate="0.0163", condition="qualified")]
+    resp, _ = run(rules)
+    assert resp["outcome"]["rate"] == "0.0163" and resp["review_reasons"] == []
+    assert [p["quote"] for p in resp["provenance"]] == ["quote 1", "quote 2"]

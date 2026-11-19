@@ -6,12 +6,12 @@ en el registro (R7).
 """
 from decimal import Decimal
 
-from app.models import CONTRACT_VERSION, NON_RESIDENT_MIN_RATE, Query, Rule
+from app.models import CONTRACT_VERSION, FIRM_CONDITIONS, NON_RESIDENT_MIN_RATE, Query, Rule
 
 _CONDITION_REASONS = {
     "requires_missing_tin": "conditional_on_payee_tin",
     "optional_method": "optional_withholding_method",
-    "other_condition": "condition_not_evaluable",
+    "other_condition": "condition_not_evaluable", "qualified": "condition_not_evaluable",
 }
 # Motivos que la regla dura del no residente deja sin efecto cuando decide ella.
 _SUPERSEDED_BY_HARD_RULE = ("no_rate_in_publication", "no_rule_for_tax_year", "unsupported_rule_structure")
@@ -70,7 +70,7 @@ def _evaluate(amount: Decimal, rules: list[Rule], step, thresholds: list) -> tup
     extra = [r for r in rules if r.kind != "rate"]
     flagged = ["unsupported_rule_structure"] if extra else []
     # Las reglas firmes deciden; las condicionales solo deciden si no hay ninguna firme.
-    pool = [r for r in usable if r.condition == "unconditional"] or usable
+    pool = [r for r in usable if r.condition in FIRM_CONDITIONS] or usable
     met, rivals = [], []
     for r in usable:  # paso 5, regla dura del umbral
         ok = r.min_amount is None or amount > r.min_amount or (amount == r.min_amount and r.threshold_inclusive)
@@ -80,7 +80,7 @@ def _evaluate(amount: Decimal, rules: list[Rule], step, thresholds: list) -> tup
             (met if r in pool else rivals).append(r)
     step("threshold", f"{len(met)} of {len(pool)} deciding rules satisfied")
     if not met:  # sin regla firme no se afirma "no se retiene"; con ella, no sale limpio si hay dudas
-        out = _no_withholding() if pool[0].condition == "unconditional" else _unknown()
+        out = _no_withholding() if pool[0].condition in FIRM_CONDITIONS else _unknown()
         return out, out, flagged + _doubts(pool + rivals), pool + rivals + extra, [], []
     chosen, ids = met, [r.id for r in met]
     if len({(r.rate, r.flat_amount) for r in chosen}) > 1:
@@ -90,7 +90,9 @@ def _evaluate(amount: Decimal, rules: list[Rule], step, thresholds: list) -> tup
     rate, flat = chosen[0].rate, chosen[0].flat_amount
     rivals = [r for r in rivals if (r.rate, r.flat_amount) != (rate, flat)]
     step("selection", f"rules {ids}, conditional rivals {[r.id for r in rivals]}")
-    reasons = flagged + _doubts(chosen + rivals)  # paso 7: la tasa se devuelve igual, con revisión
+    plain = any(r.condition == "unconditional" for r in chosen)   # otra cita la da sin salvedad
+    doubtful = [r for r in chosen if not (plain and r.condition == "qualified")]
+    reasons = flagged + _doubts(doubtful + rivals)  # paso 7: la tasa se devuelve igual, con revisión
     step("conditions", ",".join(reasons) or "unconditional")
     main = _out(True, rate, "percent_of_payment") if rate is not None else _out(True, None, "flat_amount", flat)
     step("unadjusted_outcome", main["basis"])
