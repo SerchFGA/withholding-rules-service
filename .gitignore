@@ -16,3 +16,4 @@ venv/
 *.sqlite3
 .vercel/
 .pytest_cache/
+.playwright-mcp/

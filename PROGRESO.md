@@ -1,33 +1,33 @@
 # Progreso · Servicio de reglas de retención (prueba Auxis)
 
 ## Estado actual
-Código completo y probado con red y modelo simulados: 278 pruebas pasan. Producción: 1.450
-líneas de 1.500 (`app/` 1.202, `static/` 248). Nada se ha ejercitado todavía contra la API de
-Claude ni está desplegado.
+El servicio funciona de punta a punta contra la API de Claude en local: ingiere cuatro de los
+cinco documentos en unos 50 s en total (el de Ontario no baja desde esta máquina porque
+canada.ca la bloquea; desde el VPS sí baja). 291 pruebas pasan. Producción: 1.478 líneas de
+1.500. Sin desplegar y sin README.
 
 ## Siguiente paso
-Paso 6 de `PLAN.md` §5, primera corrida real: con `ANTHROPIC_API_KEY` en `.env`, correr
-`make verify` (o `./.venv/Scripts/python scripts/verify.py`) y ajustar el prompt o el
-validador según lo que Claude extraiga de verdad.
+Desplegar en Easypanel (`PLAN.md` §9) y correr `make verify` en el VPS, que es donde puede
+ingerir los cinco documentos. Después, el README con los números reales de esa corrida.
 
 ## Pendientes
-- **Clave de la API.** Falta que el usuario cree `.env` con `ANTHROPIC_API_KEY`. Sin ella no
-  corre la ingesta real ni `make verify`. La extracción y la transcripción (`app/extract.py`)
-  son hasta entonces «diseñado, no ejercitado».
-- **Interfaz sin ver en navegador.** `static/index.html` se probó con un DOM simulado y contra
-  el servidor real, pero nadie la ha visto: aspecto, ancho de teléfono, modo oscuro y
-  teclado quedan sin comprobar. Falta abrirla (con permiso del usuario) o que la mire él.
-- **Caso de umbral dudoso.** La Pub. 505 p. 12 dice que bajo 5.000 USD en juego puede haber
-  retención de respaldo. Si Claude extrae esa regla, los casos `us-gambling-just-below-threshold`
-  y `us-gambling-exactly-at-threshold` de `eval/cases.json` fallarán. Decidir entonces qué manda.
-- **Despliegue en Easypanel.** Sin hacer. Pasos en `PLAN.md` §9; los de Hostinger y Easypanel
-  los hace el usuario.
+- **Despliegue en Easypanel.** Sin hacer. Los pasos de Hostinger y Easypanel los hace el
+  usuario; falta decidir si el repositorio se abre o se conecta como privado.
+- **`make verify` completo.** En esta máquina R2 sale FAIL solo porque Ontario no se puede
+  descargar (`fetch_failed`), y tres casos de Ontario fallan por lo mismo. Falta correrlo en
+  el VPS para tener el resultado real de los cinco documentos.
+- **La extracción varía entre corridas.** Con esfuerzo `low` la misma página cambiaba de
+  etiqueta; se pasó a `medium` (`app/extract.py`, `EFFORT`). Aun así el caso
+  `us-supplemental-wages-optional-flat-rate` pasa unas veces y otras da `conflicting_rules`.
+  El README debe decirlo: la exactitud de `make verify` puede moverse uno o dos casos.
 - **README.** Sin escribir (paso 8). Debe declarar: la clave de la API, `payee_type`, el cambio
   de URL de Ontario, que canada.ca bloquea a algunos clientes, el servidor propio, los tres
-  riesgos de `app/fetch.py` (DNS, HTML mal formado, proxy) y las cinco líneas finales (las
-  reglas duras no tienen respaldo en el corpus; ver `eval/notas/`).
-- **Revisión del diff posterior a los arreglos.** La revisión independiente se hizo antes de
-  los arreglos; falta una segunda pasada sobre la punta antes de entregar.
+  riesgos de `app/fetch.py` (DNS, HTML mal formado, proxy), la variación de la extracción y
+  las cinco líneas finales (las reglas duras no tienen respaldo en el corpus, y entre 2.000 y
+  5.000 USD en juego la publicación da dos umbrales; ver `eval/notas/`).
+- **Segunda revisión independiente.** La primera fue antes de los arreglos y de los cambios
+  de la corrida real. Falta una pasada sobre la punta antes de entregar.
+- **Margen de líneas.** Quedan 22. No cabe nada que no sea imprescindible.
 - **Horas ya gastadas.** No se ha llevado la cuenta del presupuesto de 6 horas.
 
 ## Decisiones
@@ -42,6 +42,9 @@ validador según lo que Claude extraiga de verdad.
 | 2026-11-19 | Se mantiene el corpus de cinco documentos; Ontario con la versión oficial vigente y nota en el README | Lo decidió el usuario |
 | 2026-11-19 | Alojamiento en el VPS de Hostinger con Easypanel, en `withholding.pixanai.com`, y SQLite en todos lados (D6, D7) | Lo decidió el usuario: es el único host donde se comprobó la descarga de los cinco documentos |
 | 2026-11-19 | `services` responde 24 % con revisión (D17) y el alcance es tasa fija con umbral (D18) | Lo decidió el usuario tras ver los informes del corpus |
+| 2026-11-19 | La regla firme decide y la condicional rival solo pide revisión; tasas distintas a la vez son conflicto, sin suponer que el tramo alto reemplaza al bajo: **decisión mía sin confirmar** | La ingesta real mostró que los tramos altos del corpus se aplican solo al excedente |
+| 2026-11-19 | Una regla firme con un umbral cercano que no declara se descarta: **decisión mía sin confirmar** | El modelo citó la tasa y omitió el umbral de la frase siguiente: retenía de más sin aviso |
+| 2026-11-19 | El set de evaluación cambia dos casos de juego entre 2.000 y 5.000 USD por uno bajo ambos umbrales (quedan 27): **decisión mía sin confirmar** | La publicación da dos umbrales para clases de juego que el vocabulario no separa; ninguna respuesta única era defendible |
 | 2026-11-19 | Un «no se retiene» sin `payee_type` pide revisión (`payee_type_not_provided`); corrige D21 para ese caso: **decisión mía sin confirmar** | Lo señaló la revisión independiente; un dato ausente no cuenta contra la retención (R4) |
 | 2026-11-19 | El año de la política solo puede ser posterior al consultado; con reglas solo anteriores, desconocido: **decisión mía sin confirmar** | Lo señaló la revisión: el campo afirmaba «año posterior» usando uno anterior |
 | 2026-11-19 | Las páginas escaneadas se transcriben y luego se validan como las demás; la regla sale marcada para revisión: **decisión mía sin confirmar** | La revisión mostró que antes se aceptaban sin validar (R2) |
@@ -54,6 +57,9 @@ validador según lo que Claude extraiga de verdad.
 ### 2026-11-19
 - Hecho: lectura y explicación del enunciado; investigación de opciones de extracción y de
   alojamiento; descarga y prueba de cuatro documentos del corpus; `PLAN.md`.
+- Hecho: primera corrida real contra Claude con la clave del usuario; cinco rondas de
+  ajuste (prompt, validador, selección de reglas); `make verify` corre completo; interfaz
+  vista en navegador en escritorio y teléfono.
 - Hecho: paso 0 (lectura del corpus con tres agentes), pasos 1 a 5 del plan con cuatro
   agentes en paralelo, set de evaluación de 28 casos, `make verify`, interfaz bilingüe.
 - Hecho: revisión independiente del código (12 hallazgos) y sus arreglos, cada uno con
