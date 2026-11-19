@@ -1,0 +1,713 @@
+[
+ {
+  "id": "us-gambling-above-threshold",
+  "description": "Gambling winnings well above the $5,000 threshold are withheld at a flat 24%.",
+  "query": {
+   "payment_type": "gambling_winnings",
+   "amount": "12000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.2400",
+   "basis": "percent_of_payment",
+   "requires_human_review": false,
+   "review_reasons": []
+  },
+  "source": {
+   "document": "p505",
+   "page": 11,
+   "quote": "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
+  },
+  "why": "Pub. 505 states a flat 24% rate on gambling winnings of more than $5,000, and 12,000 is above that threshold.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-gambling-large-amount",
+  "description": "The 24% gambling rate is flat: a very large prize gets the same rate.",
+  "query": {
+   "payment_type": "gambling_winnings",
+   "amount": "250000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.2400",
+   "basis": "percent_of_payment",
+   "requires_human_review": false,
+   "review_reasons": []
+  },
+  "source": {
+   "document": "p505",
+   "page": 11,
+   "quote": "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
+  },
+  "why": "The publication states one flat rate with a minimum threshold and no upper bracket, so the rate does not change with the amount.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-gambling-resident-payee",
+  "description": "A resident payee does not trigger any payee hard rule; the document rate applies.",
+  "query": {
+   "payment_type": "gambling_winnings",
+   "amount": "8000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026,
+   "payee_type": "resident"
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.2400",
+   "basis": "percent_of_payment",
+   "requires_human_review": false,
+   "review_reasons": []
+  },
+  "source": {
+   "document": "p505",
+   "page": 11,
+   "quote": "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
+  },
+  "why": "The payee is neither a government entity nor a non-resident, so the answer is the 24% rate the document states for winnings above $5,000.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-rollover-distribution",
+  "description": "Eligible rollover distributions are withheld at 20%.",
+  "query": {
+   "payment_type": "eligible_rollover_distribution",
+   "amount": "10000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.2000",
+   "basis": "percent_of_payment",
+   "requires_human_review": false,
+   "review_reasons": []
+  },
+  "source": {
+   "document": "p505",
+   "page": 11,
+   "quote": "are subject to a 20% default rate of withholding on the taxable amount of the distribution."
+  },
+  "why": "Pub. 505 states a 20% rate for eligible rollover distributions and says the recipient cannot choose a lower one, so it is unconditional.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-rollover-distribution-pub15",
+  "description": "The 20% rollover rate is also stated in Pub. 15, in the section 15 table.",
+  "query": {
+   "payment_type": "eligible_rollover_distribution",
+   "amount": "50000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.2000",
+   "basis": "percent_of_payment",
+   "requires_human_review": false,
+   "review_reasons": []
+  },
+  "source": {
+   "document": "p15",
+   "page": 51,
+   "quote": "mandatory 20% withholding applies to an eligible rollover distribution"
+  },
+  "why": "Pub. 15 calls the 20% withholding on an eligible rollover distribution mandatory, which agrees with Pub. 505.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-pension-nonperiodic",
+  "description": "Nonperiodic pension or annuity payments are withheld at a flat 10% by default.",
+  "query": {
+   "payment_type": "pension_nonperiodic",
+   "amount": "3000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.1000",
+   "basis": "percent_of_payment",
+   "requires_human_review": false,
+   "review_reasons": []
+  },
+  "source": {
+   "document": "p505",
+   "page": 11,
+   "quote": "Tax will be withheld at a flat 10% rate on any nonperiodic payments you receive, unless you choose a different withholding rate."
+  },
+  "why": "The document states 10% as the rate that applies by default; confidence is medium because the recipient may elect another rate on Form W-4R, which the query cannot express, so a reviewer could argue for a review flag.",
+  "confidence": "medium"
+ },
+ {
+  "id": "us-medicare-tax",
+  "description": "Employee Medicare tax is withheld at 1.45% of each wage payment.",
+  "query": {
+   "payment_type": "medicare_tax",
+   "amount": "5000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.0145",
+   "basis": "percent_of_payment",
+   "requires_human_review": false,
+   "review_reasons": []
+  },
+  "source": {
+   "document": "p15",
+   "page": 29,
+   "quote": "tax rate for Medicare is 1.45% (amount withheld) each for the employee and employer (2.9% total)."
+  },
+  "why": "Pub. 15 gives 1.45% as the amount withheld for Medicare and says there is no wage base limit, so it is a plain flat rate.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-medicare-tax-whats-new",
+  "description": "The Medicare rate is confirmed for 2026 in the What's New section of Pub. 15.",
+  "query": {
+   "payment_type": "medicare_tax",
+   "amount": "20000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.0145",
+   "basis": "percent_of_payment",
+   "requires_human_review": false,
+   "review_reasons": []
+  },
+  "source": {
+   "document": "p15",
+   "page": 2,
+   "quote": "The Medicare tax rate is 1.45% each for the employee and employer"
+  },
+  "why": "Page 2 restates the 1.45% employee rate for 2026 and adds that Medicare tax has no wage base limit.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-gambling-just-below-threshold",
+  "description": "Gambling winnings one cent under $5,000 are below the stated threshold.",
+  "query": {
+   "payment_type": "gambling_winnings",
+   "amount": "4999.99",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": false,
+   "rate": "0.0000",
+   "basis": "none",
+   "requires_human_review": true,
+   "review_reasons": [
+    "payee_type_not_provided"
+   ]
+  },
+  "source": {
+   "document": "p505",
+   "page": 11,
+   "quote": "Gambling winnings of more than $5,000"
+  },
+  "why": "The publication subjects only winnings of more than $5,000 to withholding, so an amount below the stated threshold is not withheld (hard rule). The query does not say who the payee is, so the non-resident hard rule (always withhold) could not be evaluated: the service still answers 'do not withhold' but flags it, because absent data must not count as evidence against withholding.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-gambling-exactly-at-threshold",
+  "description": "Exactly $5,000 is not 'more than $5,000': the threshold is exclusive.",
+  "query": {
+   "payment_type": "gambling_winnings",
+   "amount": "5000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026,
+   "payee_type": "resident"
+  },
+  "expected": {
+   "withholding_applies": false,
+   "rate": "0.0000",
+   "basis": "none",
+   "requires_human_review": false,
+   "review_reasons": []
+  },
+  "source": {
+   "document": "p505",
+   "page": 11,
+   "quote": "Gambling winnings of more than $5,000"
+  },
+  "why": "The wording is 'more than $5,000', so a payment of exactly 5,000 does not reach the threshold and is not withheld. The payee is stated as resident, so the non-resident hard rule is evaluated and does not apply: a clean 'do not withhold'.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-gambling-just-above-threshold",
+  "description": "One cent over $5,000 crosses the threshold and is withheld at 24%.",
+  "query": {
+   "payment_type": "gambling_winnings",
+   "amount": "5000.01",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.2400",
+   "basis": "percent_of_payment",
+   "requires_human_review": false,
+   "review_reasons": []
+  },
+  "source": {
+   "document": "p505",
+   "page": 11,
+   "quote": "Gambling winnings of more than $5,000"
+  },
+  "why": "5,000.01 is more than $5,000, so the flat 24% rate stated two lines above the threshold on the same page applies.",
+  "confidence": "high"
+ },
+ {
+  "id": "co-services-no-rate",
+  "description": "Colombia: the DIAN resolution only sets the UVT value, so the rate is unknown.",
+  "query": {
+   "payment_type": "services",
+   "amount": "12000000",
+   "jurisdiction": "CO",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": null,
+   "rate": null,
+   "basis": null,
+   "requires_human_review": true,
+   "review_reasons": [
+    "no_rate_in_publication"
+   ]
+  },
+  "source": {
+   "document": "dian",
+   "page": 1,
+   "quote": "Fijar en cincuenta y dos mil trescientos setenta y cuatro pesos ($52.374) el valor de la Unidad de Valor Tributario -UVT que regirá durante el año 2026"
+  },
+  "why": "The only substantive article fixes the value of one UVT for 2026; the resolution states no withholding rate for any payment, so the answer is unknown and goes to review, never 'no withholding'.",
+  "confidence": "high"
+ },
+ {
+  "id": "co-services-amount-below-uvt-value",
+  "description": "Colombia: an amount under 52,374 pesos is not 'below a threshold'; the UVT value is not a withholding threshold.",
+  "query": {
+   "payment_type": "services",
+   "amount": "50000",
+   "jurisdiction": "CO",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": null,
+   "rate": null,
+   "basis": null,
+   "requires_human_review": true,
+   "review_reasons": [
+    "no_rate_in_publication"
+   ]
+  },
+  "source": {
+   "document": "dian",
+   "page": 1,
+   "quote": "para fijar el valor de la Unidad de Valor Tributario (UVT) aplicable para el año 2026."
+  },
+  "why": "$52.374 is the value of a unit of account, not a minimum payment for withholding, so the threshold hard rule must not fire and the answer stays unknown.",
+  "confidence": "high"
+ },
+ {
+  "id": "co-services-year-not-covered",
+  "description": "Colombia, tax year 2025: the resolution is dated 2025 but its value governs 2026, and it has no rate for any year.",
+  "query": {
+   "payment_type": "services",
+   "amount": "12000000",
+   "jurisdiction": "CO",
+   "tax_year": 2025
+  },
+  "expected": {
+   "withholding_applies": null,
+   "rate": null,
+   "basis": null,
+   "requires_human_review": true,
+   "review_reasons": [
+    "no_rate_in_publication"
+   ]
+  },
+  "source": {
+   "document": "dian",
+   "page": 1,
+   "quote": "el valor de la Unidad de Valor Tributario -UVT que regirá durante el año 2026"
+  },
+  "why": "The document states no withholding rate for 2025 or for any other year, so there is no rule to fall back on and the answer is unknown.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-unemployment-no-rate",
+  "description": "Unemployment compensation: withholding is mentioned as a choice, with no rate.",
+  "query": {
+   "payment_type": "unemployment_compensation",
+   "amount": "2000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": null,
+   "rate": null,
+   "basis": null,
+   "requires_human_review": true,
+   "review_reasons": [
+    "no_rate_in_publication"
+   ]
+  },
+  "source": {
+   "document": "p505",
+   "page": 12,
+   "quote": "You can choose to have income tax withheld from unemployment compensation."
+  },
+  "why": "Pub. 505 says withholding from unemployment compensation can be requested on Form W-4V but never states the rate, so the answer is unknown.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-sick-pay-no-rate",
+  "description": "Sick pay: the document says tax must be withheld, at 'a flat rate' it never quantifies.",
+  "query": {
+   "payment_type": "sick_pay",
+   "amount": "1500",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": null,
+   "rate": null,
+   "basis": null,
+   "requires_human_review": true,
+   "review_reasons": [
+    "no_rate_in_publication"
+   ]
+  },
+  "source": {
+   "document": "p505",
+   "page": 10,
+   "quote": "An agent who does not pay regular wages to you may choose to withhold income tax at a flat rate."
+  },
+  "why": "Withholding on sick pay is mentioned but the flat rate has no figure in the document, so no rate can be returned.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-wages-2024-revproc-no-withholding",
+  "description": "Tax year 2024: the only 2024 document is Rev. Proc. 2023-34, which has no withholding rate; its $5,000 wage figure is a levy exemption.",
+  "query": {
+   "payment_type": "wages",
+   "amount": "4000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2024
+  },
+  "expected": {
+   "withholding_applies": null,
+   "rate": null,
+   "basis": null,
+   "requires_human_review": true,
+   "review_reasons": [
+    "no_rate_in_publication"
+   ]
+  },
+  "source": {
+   "document": "rp2334",
+   "page": 20,
+   "quote": "Exempt Amount of Wages, Salary, or Other Income."
+  },
+  "why": "The Rev. Proc. mentions wages only for the amount exempt from levy, not for withholding, and the 2026 publications give no income tax rate for regular wages either (Pub. 15 refers to Pub. 15-T); confidence is medium because, if the Pub. 15-T reference were stored as a 2026 table rule, the reasons would be the year fallback ones instead.",
+  "confidence": "medium"
+ },
+ {
+  "id": "ca-on-services-payroll-only",
+  "description": "Ontario: T4032 covers payroll deductions only, so services to a supplier have no stated rate.",
+  "query": {
+   "payment_type": "services",
+   "amount": "12000",
+   "jurisdiction": "CA-ON",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": null,
+   "rate": null,
+   "basis": null,
+   "requires_human_review": true,
+   "review_reasons": [
+    "no_rate_in_publication"
+   ]
+  },
+  "source": {
+   "document": "t4032",
+   "page": 5,
+   "quote": "It will help you determine the payroll deductions for your employees or pensioners."
+  },
+  "why": "The guide is about deductions from employees and pensioners and never mentions payments for services, so the rate is unknown, not zero.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-services-backup-withholding",
+  "description": "Services in US-FED: the only stated rate is the 24% backup withholding, which depends on a missing TIN.",
+  "query": {
+   "payment_type": "services",
+   "amount": "12000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.2400",
+   "basis": "percent_of_payment",
+   "requires_human_review": true,
+   "review_reasons": [
+    "conditional_on_payee_tin"
+   ]
+  },
+  "source": {
+   "document": "p15",
+   "page": 9,
+   "quote": "Backup withholding. You must generally withhold 24% of certain taxable payments if the payee fails to furnish you with their correct TIN."
+  },
+  "why": "The 24% rate applies only when the payee has not given a correct TIN, a fact the query does not carry, so the rate is returned with a review flag.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-supplemental-wages-optional-flat-rate",
+  "description": "Supplemental wages: the flat 22% is one of two methods the employer may use.",
+  "query": {
+   "payment_type": "supplemental_wages",
+   "amount": "10000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.2200",
+   "basis": "percent_of_payment",
+   "requires_human_review": true,
+   "review_reasons": [
+    "optional_withholding_method"
+   ]
+  },
+  "source": {
+   "document": "p15",
+   "page": 24,
+   "quote": "a. Withhold a flat 22% (no other percentage"
+  },
+  "why": "Pub. 15 lists the flat 22% as option (a) of 'you can use one of the following methods', the other being the aggregate method; confidence is medium because page 2 states the 22% without that qualifier and a separate 37% applies above $1 million a year.",
+  "confidence": "medium"
+ },
+ {
+  "id": "us-social-security-wage-base-cap",
+  "description": "Social security tax: 6.2% is withheld, but only up to a maximum wage base the query cannot evaluate.",
+  "query": {
+   "payment_type": "social_security_tax",
+   "amount": "5000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.0620",
+   "basis": "percent_of_payment",
+   "requires_human_review": true,
+   "review_reasons": [
+    "unsupported_rule_structure"
+   ]
+  },
+  "source": {
+   "document": "p15",
+   "page": 29,
+   "quote": "For 2026, the social security tax rate is 6.2% (amount withheld) each for the employer and employee"
+  },
+  "why": "The 6.2% rate comes with a $184,500 wage base limit, a maximum cap that depends on year-to-date wages; confidence is medium because a stricter reading of the cap would return no rate at all, with the same review reason.",
+  "confidence": "medium"
+ },
+ {
+  "id": "ca-on-ei-premium-annual-maximum",
+  "description": "Ontario EI premium: 1.63% of insurable earnings, with an annual maximum the query cannot evaluate.",
+  "query": {
+   "payment_type": "ei_premium",
+   "amount": "1300",
+   "jurisdiction": "CA-ON",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.0163",
+   "basis": "percent_of_payment",
+   "requires_human_review": true,
+   "review_reasons": [
+    "unsupported_rule_structure"
+   ]
+  },
+  "source": {
+   "document": "t4032",
+   "page": 13,
+   "quote": "EI premiums = 0.0163 × $1,300 = $21.19"
+  },
+  "why": "The worked example deducts 0.0163 of a $1,300 payment, and page 8 says deductions stop at the maximum annual premium of 1,123.07, a cap; confidence is medium for the same reason as the social security case.",
+  "confidence": "medium"
+ },
+ {
+  "id": "ca-on-wages-lookup-tables",
+  "description": "Ontario income tax on wages is found in lookup tables and bracket charts, not in a flat rate.",
+  "query": {
+   "payment_type": "wages",
+   "amount": "3000",
+   "jurisdiction": "CA-ON",
+   "tax_year": 2026
+  },
+  "expected": {
+   "withholding_applies": null,
+   "rate": null,
+   "basis": null,
+   "requires_human_review": true,
+   "review_reasons": [
+    "unsupported_rule_structure"
+   ]
+  },
+  "source": {
+   "document": "t4032",
+   "page": 12,
+   "quote": "you have to look up the amounts in the federal tax table and the provincial tax table."
+  },
+  "why": "The deduction depends on pay period, claim code and federal plus provincial tables, a structure the service does not resolve, so the answer is unknown with review.",
+  "confidence": "high"
+ },
+ {
+  "id": "hard-rule-government-payee",
+  "description": "Payee is a government entity: never withhold, whatever the documents say.",
+  "query": {
+   "payment_type": "services",
+   "amount": "12000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026,
+   "payee_type": "government"
+  },
+  "expected": {
+   "withholding_applies": false,
+   "rate": "0.0000",
+   "basis": "none",
+   "requires_human_review": false,
+   "review_reasons": []
+  },
+  "source": null,
+  "why": "Hard rule from the exercise statement, fixed in code; no corpus document states it, so there is no citation and the 24% backup rate for services is not applied.",
+  "confidence": "high"
+ },
+ {
+  "id": "hard-rule-non-resident-no-document-rule",
+  "description": "Non-resident payee where the document has no rate: always withhold, at the 0.3000 minimum.",
+  "query": {
+   "payment_type": "services",
+   "amount": "12000000",
+   "jurisdiction": "CO",
+   "tax_year": 2026,
+   "payee_type": "non_resident"
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.3000",
+   "basis": "percent_of_payment",
+   "requires_human_review": false,
+   "review_reasons": []
+  },
+  "source": null,
+  "why": "Hard rule from the exercise statement, fixed in code; the DIAN resolution states no rate, so the 0.3000 minimum decides and there is no citation.",
+  "confidence": "high"
+ },
+ {
+  "id": "hard-rule-non-resident-raises-document-rate",
+  "description": "Non-resident payee where the document rate (24%) is below the minimum: the rate is raised to 0.3000.",
+  "query": {
+   "payment_type": "gambling_winnings",
+   "amount": "12000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2026,
+   "payee_type": "non_resident"
+  },
+  "expected": {
+   "withholding_applies": true,
+   "rate": "0.3000",
+   "basis": "percent_of_payment",
+   "requires_human_review": false,
+   "review_reasons": []
+  },
+  "source": {
+   "document": "p505",
+   "page": 11,
+   "quote": "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
+  },
+  "why": "The document rate is 0.2400, below the 0.3000 minimum that the hard rule sets for non-residents, so the minimum wins.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-gambling-tax-year-2025-ambiguous",
+  "description": "Tax year 2025 has no gambling rule; the corpus only has the 2026 one.",
+  "query": {
+   "payment_type": "gambling_winnings",
+   "amount": "12000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2025
+  },
+  "expected": {
+   "withholding_applies": null,
+   "rate": null,
+   "basis": null,
+   "requires_human_review": true,
+   "review_reasons": [
+    "no_rule_for_tax_year",
+    "tax_year_ambiguous_resolved_to_later"
+   ]
+  },
+  "expected_policy": {
+   "withholding_applies": true,
+   "rate": "0.2400",
+   "basis": "percent_of_payment"
+  },
+  "source": {
+   "document": "p505",
+   "page": 11,
+   "quote": "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
+  },
+  "why": "Pub. 505 is for use in 2026 and states nothing for 2025, so the unadjusted answer is unknown; client policy resolves to the later year (2026, 24%) and flags the case.",
+  "confidence": "high"
+ },
+ {
+  "id": "us-rollover-tax-year-2025-ambiguous",
+  "description": "Tax year 2025 has no rollover rule; the policy-adjusted outcome uses the 2026 rate.",
+  "query": {
+   "payment_type": "eligible_rollover_distribution",
+   "amount": "10000",
+   "jurisdiction": "US-FED",
+   "tax_year": 2025
+  },
+  "expected": {
+   "withholding_applies": null,
+   "rate": null,
+   "basis": null,
+   "requires_human_review": true,
+   "review_reasons": [
+    "no_rule_for_tax_year",
+    "tax_year_ambiguous_resolved_to_later"
+   ]
+  },
+  "expected_policy": {
+   "withholding_applies": true,
+   "rate": "0.2000",
+   "basis": "percent_of_payment"
+  },
+  "source": {
+   "document": "p505",
+   "page": 11,
+   "quote": "are subject to a 20% default rate of withholding on the taxable amount of the distribution."
+  },
+  "why": "The only rollover rule in the corpus is in the 2026 publications, so 2025 is unknown unadjusted and the policy-adjusted outcome takes the 2026 rate of 20% with a review flag.",
+  "confidence": "high"
+ }
+]

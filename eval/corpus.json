@@ -1,0 +1,37 @@
+[
+  {
+    "id": "p15",
+    "title": "IRS Publication 15 (Circular E), Employer's Tax Guide, for use in 2026",
+    "source_url": "https://www.irs.gov/pub/irs-pdf/p15.pdf",
+    "jurisdiction": "US-FED",
+    "note": "59 pages. Payroll guide: social security, Medicare, supplemental wages and backup withholding. The income tax withholding tables for regular wages are not in it (it refers to Pub. 15-T)."
+  },
+  {
+    "id": "p505",
+    "title": "IRS Publication 505, Tax Withholding and Estimated Tax, for use in 2026",
+    "source_url": "https://www.irs.gov/pub/irs-pdf/p505.pdf",
+    "jurisdiction": "US-FED",
+    "note": "48 pages, mostly prose. Chapter 1 states the withholding rules cited here (gambling winnings, pensions, eligible rollover distributions, backup withholding). Chapter 2 is estimated tax, not withholding."
+  },
+  {
+    "id": "rp2334",
+    "title": "IRS Revenue Procedure 2023-34, inflation-adjusted items for 2024",
+    "source_url": "https://www.irs.gov/pub/irs-drop/rp-23-34.pdf",
+    "jurisdiction": "US-FED",
+    "note": "27 pages. Income tax brackets and other inflation-adjusted amounts for taxable years beginning in 2024. It states no withholding rate."
+  },
+  {
+    "id": "t4032",
+    "title": "CRA T4032-ON, Payroll Deductions Tables: CPP, EI, and income tax deductions, Ontario, effective January 1, 2026",
+    "source_url": "https://www.canada.ca/content/dam/cra-arc/migration/cra-arc/tx/bsnss/tpcs/pyrll/t4032/2026/t4032-on-1-26e.pdf",
+    "jurisdiction": "CA-ON",
+    "note": "16 pages. The URL in the exercise statement (t4032on-1-26e.pdf, without hyphens) no longer serves the PDF; this is the current official version of the same document."
+  },
+  {
+    "id": "dian",
+    "title": "DIAN Resolución 000238 de 2025 (valor de la UVT para 2026)",
+    "source_url": "https://normograma.dian.gov.co/dian/compilacion/docs/resolucion_dian_0238_2025.htm",
+    "jurisdiction": "CO",
+    "note": "HTML without pages, in Spanish: every citation uses page 1. It only sets the value of the tax value unit (UVT) for 2026, written $52.374 (52374 pesos). It states no withholding rate."
+  }
+]
