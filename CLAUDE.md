@@ -35,8 +35,10 @@ código de producción (sin contar pruebas), README de una página, commits pequ
 | `static/` | Interfaz bilingüe de una página (paso 7 del plan). Cuenta para las 1.500 líneas | Sí |
 | `tests/` | Pruebas (se crea en el paso 1 del plan). No cuenta para el límite | No |
 | `eval/` | Set de evaluación: 20 consultas o más con respuesta esperada, documento y página | No |
+| `eval/notas/` | Lectura del corpus por documento (2026-11-19): reglas con página y cita, casos difíciles y consultas candidatas. Material de trabajo, no entregable | No |
 | `scripts/` | `verify.py`, lo que corre `make verify` | No |
 | `README.md` | Entregable de una página (paso 8 del plan) | Sí |
+| `Dockerfile`, `requirements.txt`, `requirements-dev.txt`, `pytest.ini`, `.env.example` | Imagen, dependencias, configuración de pruebas y variables necesarias (sin valores). Son los únicos archivos de configuración permitidos en la raíz | Sí |
 
 Un archivo nuevo nunca va suelto en la raíz: va en la carpeta que le toca, o se agrega una
 carpeta a esta tabla y al índice en el mismo cambio.
@@ -46,6 +48,8 @@ carpeta a esta tabla y al índice en el mismo cambio.
 ```bash
 python .claude/skills/en-curso/en_curso.py estado   # dónde va el trabajo en marcha
 python .claude/hooks/verificar.py                   # índice y redacción al día
+./.venv/Scripts/python -m pytest -q                 # todas las pruebas
+wc -l app/*.py static/*                             # líneas de producción (tope 1.500)
 ```
 
 Aquí solo están los comandos que ya existen. Uno nuevo se escribe aquí el mismo día que se
@@ -154,7 +158,7 @@ commit ni push sin que se le pida.
 ## Definición de terminado
 
 1. Cumple el requisito de `Rules.md` que atiende, y hay una prueba que lo demuestra.
-2. Pasan las verificaciones del proyecto (se definen con el paso 1 del plan).
+2. Pasan todas las pruebas (`./.venv/Scripts/python -m pytest -q`).
 3. Si toca una zona delicada, una persona lo revisó y lo dijo por escrito.
 4. Si el trabajo obligó a cambiar una decisión, `PLAN.md`, `INDICE.md` y `PROGRESO.md`
    quedaron al día en el mismo cambio.

@@ -41,12 +41,19 @@ Todas son **decisión mía sin confirmar** salvo las marcadas como confirmadas.
 | D8 | Parámetro opcional nuevo `payee_type` (`government`, `non_resident`, `resident`) en `/v1/resolve` | Sin él las reglas duras no se pueden evaluar |
 | D9 | Si la tasa es desconocida: `withholding_applies: null`, `rate: null`, revisión obligatoria | Responder `false`: lo prohíbe R4 |
 | D10 | Vencido el plazo: HTTP 504 con error explícito en el resolve; en la ingesta, documento marcado "parcial" | Devolver lo que haya como decisión: lo prohíbe R3 |
-| D11 | Campos nuevos del contrato: `policy_outcome`, `policy_applied`, `security_events`. `outcome` queda como el resultado sin ajustar | Cambiar `outcome`: rompe al orquestador |
+| D11 | Campos nuevos del contrato: `policy_outcome`, `policy_applied`, `security_events`, `decision_trace`, `request_id`. `outcome` queda como el resultado sin ajustar | Cambiar `outcome`: rompe al orquestador |
 | D12 | `POST /v1/documents` exige una clave en cabecera | Abierto: cualquiera gasta la cuota de la IA |
 | D13 | Regla de páginas escaneadas: toda regla salida de visión queda marcada para revisión | Confiar en lo que la IA dice haber leído |
 | D14 | Gobierno gana sobre no residente si llegan a chocar | El enunciado no lo define |
 | D15 | Interfaz: una sola página estática, sin framework, inglés y español | React o similar: gasta el límite de líneas |
 | D16 | Ontario: usar la versión oficial vigente y declararlo en el README | Sustituir por otro documento: penalizado |
+| D17 | `services` en `US-FED` responde 24 % citando la retención de respaldo, con revisión obligatoria y motivo `conditional_on_payee_tin` (confirmado por el usuario) | Copiar el ejemplo sin revisión: afirma más que el documento. Responder desconocido: contradice el único ejemplo del enunciado |
+| D18 | Alcance: solo reglas de tasa fija con umbral opcional. Topes máximos, tramos que suman y rejillas se guardan como estructura no soportada y responden revisar (confirmado por el usuario) | Modelar tramos y topes: no cabe en 1.500 líneas ni en 6 horas |
+| D19 | El validador exige, además de la cita literal, que la cita hable de retener, y normaliza guiones de corte, apóstrofos y saltos de línea | Solo cita literal: deja pasar el 24 % de un tramo de impuesto y el 30 % de impuesto estimado, que existen palabra por palabra |
+| D20 | La jurisdicción no es una lista fija: se valida su forma y, si el dominio es conocido, el país. Así entra un sexto documento de otro país | Lista cerrada de tres: rompería en la prueba en vivo |
+| D21 | Sin `payee_type` no hay motivo de revisión: se anota en `decision_trace` que las reglas de beneficiario no se evaluaron | Marcar revisión siempre: contradice el ejemplo del enunciado |
+| D22 | Un intento de instrucción incrustada se registra en `security_events` y no cambia ni el resultado ni la bandera de revisión | Marcar revisión: sería dejar que el documento altere la respuesta |
+| D23 | Si hay un documento leído a medias, toda respuesta sale con revisión y motivo `document_partially_read` | Responder como si estuviera completo: lo prohíbe R3 |
 
 **Aviso sobre la interfaz:** el enunciado no la pide y castiga construir de más. Cuenta contra
 las 1.500 líneas. Se limita a unas 250 líneas y se hace al final; si el tiempo no alcanza, es
@@ -177,7 +184,7 @@ Decidido por el usuario el 2026-11-19: no se pregunta a los evaluadores; se docu
 2. **`payee_type`.** El README explica que las reglas duras dependen del tipo de
    beneficiario, que el ejemplo del enunciado no lo trae y que por eso se agregó como
    parámetro opcional (`government`, `non_resident`, `resident`). Sin él, las reglas de
-   gobierno y no residente no se evalúan y la respuesta lo dice en `review_reasons`.
+   gobierno y no residente no se evalúan y la respuesta lo dice en `decision_trace`.
 3. **Ontario.** Se mantiene el corpus de cinco documentos. La URL del enunciado no entrega
    el PDF; se usa la versión oficial vigente y el README lo dice. Si el servidor tampoco
    puede descargarla, el README lo declara tal cual, con la evidencia, y ese documento

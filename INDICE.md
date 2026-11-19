@@ -27,7 +27,11 @@ dice dónde está cada cosa.
 | `.claude/` | Skill `en-curso`, el verificador (`hooks/verificar.py`) y los hooks (`settings.json`) | No |
 | `Rules.md` | El enunciado de la prueba. No se edita | No |
 | `PLAN.md` | Plan de implementación | No |
-| `app/`, `static/`, `tests/`, `eval/`, `scripts/`, `README.md` | Todavía no existen. Se crean según `PLAN.md` §5 | Ver `CLAUDE.md` |
+| `eval/notas/` | Lectura del corpus: un archivo por documento (`p15`, `p505`, `rp2334`, `t4032`, `dian`) con reglas, citas, casos difíciles y consultas candidatas | No |
+| `app/` | Código de producción. `models.py` es el contrato entre módulos | Sí |
+| `tests/` | Pruebas, una por módulo | No |
+| `Dockerfile`, `requirements.txt`, `.env.example` | Imagen del servicio, dependencias y variables necesarias (sin valores) | Sí |
+| `static/`, `scripts/`, `README.md` | Todavía no existen. Se crean según `PLAN.md` §5 | Ver `CLAUDE.md` |
 
 ## 3. Documentos
 
@@ -48,7 +52,7 @@ dice dónde está cada cosa.
 ### `PLAN.md`
 
 - **1. Lo verificado (2026-11-19)**: qué se comprobó con los documentos reales y qué falta.
-- **2. Decisiones**: D1 a D16, con la alternativa descartada de cada una.
+- **2. Decisiones**: D1 a D23, con la alternativa descartada de cada una.
 - **3. Arquitectura**: flujo de la ingesta, flujo del resolve y tablas.
 - **4. Reparto de líneas (tope 1.500)**: presupuesto por archivo.
 - **5. Orden de trabajo**: pasos 0 a 8, con verificación y tiempo de cada uno.
@@ -69,6 +73,7 @@ dice dónde está cada cosa.
 | Qué se hace primero | `PLAN.md` §5 |
 | Presupuesto de líneas | `PLAN.md` §4 |
 | Estado de los cinco documentos del corpus | `PLAN.md` §1 |
+| Qué reglas trae cada documento y qué no dice | `eval/notas/` |
 | Registro y redacción de datos | `PLAN.md` §7 |
 | Reglas de trabajo y prohibiciones | `CLAUDE.md` |
 | En qué va el proyecto | `PROGRESO.md` |
@@ -88,6 +93,8 @@ dice dónde está cada cosa.
 
 | Fecha | Qué cambió |
 |---|---|
+| 2026-11-19 | `PLAN.md` §2 gana D17 a D23 tras leer el corpus. Empieza el código: `app/` y `tests/` |
+| 2026-11-19 | Nueva carpeta `eval/notas/` con la lectura del corpus (paso 0) |
 | 2026-11-19 | Alojamiento decidido: VPS con Easypanel y SQLite en todos lados (D6, D7). `PLAN.md` gana §9 «Despliegue en el VPS»; los supuestos pasan a §10 |
 | 2026-11-19 | `PLAN.md` §1: Ontario comprobado en su dirección vigente y descargable desde el VPS |
 | 2026-11-19 | `PLAN.md` §9 pasa de preguntas a supuestos declarados en el README; §1 y §8 anotan el bloqueo de canada.ca |

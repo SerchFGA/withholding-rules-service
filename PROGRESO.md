@@ -28,6 +28,9 @@ evaluación.
 | 2026-11-19 | No se pregunta a los evaluadores: la clave de la API de Claude y `payee_type` se explican en el README | Lo decidió el usuario |
 | 2026-11-19 | Se mantiene el corpus de cinco documentos; Ontario con la versión oficial vigente y nota en el README | Lo decidió el usuario |
 | 2026-11-19 | Alojamiento en el VPS de Hostinger con Easypanel, en `withholding.pixanai.com`, y SQLite en todos lados (D6, D7) | Lo decidió el usuario: es el único host donde se comprobó la descarga de los cinco documentos |
+| 2026-11-19 | `services` responde 24 % con revisión (D17) y el alcance es tasa fija con umbral (D18) | Lo decidió el usuario tras ver los informes del corpus |
+| 2026-11-19 | D19 a D23 de `PLAN.md` §2: **decisión mía sin confirmar** | Salen de los hallazgos del corpus; hacían falta para repartir el trabajo entre agentes |
+| 2026-11-19 | Repositorio de GitHub privado: **decisión mía sin confirmar** | Incluye el enunciado de la prueba; se abre o se comparte al entregar |
 | 2026-11-19 | D1 a D16 de `PLAN.md` §2, salvo las de arriba: **decisión mía sin confirmar** | Propuestas del agente a partir de lo verificado; el usuario pidió seguir con el plan |
 | 2026-11-19 | `git init` con rama `main`, sin commits: **decisión mía sin confirmar** | El entregable es un repositorio y `.gitignore` lo necesita |
 
