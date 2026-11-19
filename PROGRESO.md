@@ -1,33 +1,29 @@
 # Progreso · Servicio de reglas de retención (prueba Auxis)
 
 ## Estado actual
-El servicio funciona de punta a punta contra la API de Claude en local: ingiere cuatro de los
-cinco documentos en unos 50 s en total (el de Ontario no baja desde esta máquina porque
-canada.ca la bloquea; desde el VPS sí baja). 291 pruebas pasan. Producción: 1.478 líneas de
-1.500. Sin desplegar y sin README.
+Desplegado y funcionando en `https://withholding.pixanai.com` (VPS con Easypanel). Los cinco
+documentos se ingirieron ahí por el proceso real, desde base vacía, el 2026-11-19: 61 s en
+total, 38 reglas, 25 de 27 casos del set de evaluación. Repositorio público. README escrito.
+291 pruebas pasan. Producción: 1.478 líneas de 1.500.
 
 ## Siguiente paso
-Desplegar en Easypanel (`PLAN.md` §9) y correr `make verify` en el VPS, que es donde puede
-ingerir los cinco documentos. Después, el README con los números reales de esa corrida.
+Segunda revisión independiente sobre la punta (código y README) y sus arreglos. Después,
+ensayar la llamada en vivo: ingerir un documento nuevo desde la interfaz con la clave de ingesta.
 
 ## Pendientes
-- **Despliegue en Easypanel.** Sin hacer. Los pasos de Hostinger y Easypanel los hace el
-  usuario; falta decidir si el repositorio se abre o se conecta como privado.
-- **`make verify` completo.** En esta máquina R2 sale FAIL solo porque Ontario no se puede
-  descargar (`fetch_failed`), y tres casos de Ontario fallan por lo mismo. Falta correrlo en
-  el VPS para tener el resultado real de los cinco documentos.
-- **La extracción varía entre corridas.** Con esfuerzo `low` la misma página cambiaba de
-  etiqueta; se pasó a `medium` (`app/extract.py`, `EFFORT`). Aun así el caso
-  `us-supplemental-wages-optional-flat-rate` pasa unas veces y otras da `conflicting_rules`.
-  El README debe decirlo: la exactitud de `make verify` puede moverse uno o dos casos.
-- **README.** Sin escribir (paso 8). Debe declarar: la clave de la API, `payee_type`, el cambio
-  de URL de Ontario, que canada.ca bloquea a algunos clientes, el servidor propio, los tres
-  riesgos de `app/fetch.py` (DNS, HTML mal formado, proxy), la variación de la extracción y
-  las cinco líneas finales (las reglas duras no tienen respaldo en el corpus, y entre 2.000 y
-  5.000 USD en juego la publicación da dos umbrales; ver `eval/notas/`).
-- **Segunda revisión independiente.** La primera fue antes de los arreglos y de los cambios
-  de la corrida real. Falta una pasada sobre la punta antes de entregar.
-- **Margen de líneas.** Quedan 22. No cabe nada que no sea imprescindible.
+- **Segunda revisión independiente.** En curso o por lanzar. La primera fue antes de los
+  arreglos y de los cambios de la corrida real.
+- **Easypanel no redespliega solo.** Tras cada push hay que pulsar Deploy (o activar el
+  despliegue automático). El volumen `withholding-data` conserva la base entre despliegues;
+  falta comprobarlo con un redespliegue real.
+- **Dos casos fallan en producción**, ambos con respuesta segura: `us-services-backup-withholding`
+  (sale un motivo de revisión de más) y `us-supplemental-wages-optional-flat-rate`
+  (`conflicting_rules`). La extracción varía entre corridas; está dicho en el README.
+- **Ensayo de la llamada en vivo.** Falta probar la ingesta de un sexto documento desde la
+  interfaz, idealmente uno escaneado, que es el camino «diseñado, no ejercitado».
+- **El README va solo en inglés**, por el tope de una página: **decisión mía sin confirmar**
+  (la regla del proyecto decía inglés y español).
+- **Margen de líneas.** Quedan 22.
 - **Horas ya gastadas.** No se ha llevado la cuenta del presupuesto de 6 horas.
 
 ## Decisiones
@@ -57,6 +53,8 @@ ingerir los cinco documentos. Después, el README con los números reales de esa
 ### 2026-11-19
 - Hecho: lectura y explicación del enunciado; investigación de opciones de extracción y de
   alojamiento; descarga y prueba de cuatro documentos del corpus; `PLAN.md`.
+- Hecho: repositorio público, despliegue en Easypanel (el usuario en los paneles), ingesta
+  de los cinco documentos en producción y README.
 - Hecho: primera corrida real contra Claude con la clave del usuario; cinco rondas de
   ajuste (prompt, validador, selección de reglas); `make verify` corre completo; interfaz
   vista en navegador en escritorio y teléfono.

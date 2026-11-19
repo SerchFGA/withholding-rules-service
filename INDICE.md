@@ -34,7 +34,7 @@ dice dónde está cada cosa.
 | `static/index.html` | Interfaz de una página, inglés y español, sin dependencias | Sí |
 | `scripts/verify.py`, `Makefile` | `make verify`: pruebas, ingesta real desde base vacía, set de evaluación y una línea por requisito | Sí |
 | `eval/cases.json`, `eval/corpus.json` | Set de evaluación (28 consultas con página y cita) y los cinco documentos del corpus | Sí |
-| `README.md` | Todavía no existe (paso 8 de `PLAN.md` §5) | Sí |
+| `README.md` | Entregable de una página, en inglés: qué hace, cómo correrlo, endpoints, diagrama C4, decisiones, qué se corrió y las cinco líneas finales | Sí |
 
 ## 3. Documentos
 
@@ -96,6 +96,7 @@ dice dónde está cada cosa.
 
 | Fecha | Qué cambió |
 |---|---|
+| 2026-11-19 | `README.md` escrito con los números de la corrida en producción |
 | 2026-11-19 | Entran `static/`, `scripts/`, `Makefile` y el set de evaluación; arreglos de la revisión independiente |
 | 2026-11-19 | `PLAN.md` §2 gana D17 a D23 tras leer el corpus. Empieza el código: `app/` y `tests/` |
 | 2026-11-19 | Nueva carpeta `eval/notas/` con la lectura del corpus (paso 0) |
