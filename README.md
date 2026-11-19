@@ -1,14 +1,16 @@
 # Withholding rules service
 
 Reads official tax publications, answers "does withholding apply to this payment, and at what
-rate", and flags what a human must decide. Live: <https://withholding.pixanai.com> (UI in English
-and Spanish). Repo: <https://github.com/SerchFGA/withholding-rules-service>.
+rate", and flags what a human must decide. Live: <https://withholding.pixanai.com> (with a small UI).
+Repo: <https://github.com/SerchFGA/withholding-rules-service>.
 
 **How it works.** The model is used once, at ingestion, only to read: it returns structured claims
 from a closed vocabulary. Code checks every claim against the source (quote, page, rate, amounts, tax
-year, jurisdiction) and discards what it cannot verify. Two fields remain the model's label, checked
-only against the vocabulary: `payment_type` and `condition`. `GET /v1/resolve` never calls a model: it is a lookup over validated rules plus the three
-hard rules, in a fixed order, in `app/resolve.py`.
+year, jurisdiction) and discards what it cannot verify. `payment_type` and `condition` remain the
+model's label, with one guard: a quote that carries a caveat ("certain kinds", "unless", "generally",
+"exempt") is never stored as unconditional, so it always asks for review. `GET /v1/resolve` never
+calls a model: it is a lookup over validated rules plus the three hard rules, in a fixed order, in
+`app/resolve.py`.
 
 ## Run it
 
@@ -20,13 +22,13 @@ make run                    # http://localhost:8000
 ```
 
 `make verify` starts from an empty SQLite file, ingests the five documents over the network with the
-real model, runs 295 tests and the 27-query evaluation set, and prints PASS/FAIL per R1 to R7, a
+real model, runs the 305 tests and the 27-query evaluation set, and prints PASS/FAIL per R1 to R7, a
 corpus line and accuracy. It needs **your own `ANTHROPIC_API_KEY`**: no key and no recorded model answer is in this
 repository, the image or any prompt (recorded answers would be seeding).
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /v1/documents` `{"source_url"}` + header `X-Ingest-Key` | Ingest one publication (PDF, HTML or image). Same URL and same bytes: no new rows, zero model calls |
+| `POST /v1/documents` `{"source_url"}` + header `X-Ingest-Key` | Ingest one publication (PDF, HTML or image). Same URL, bytes and pipeline version: no new rows, zero model calls |
 | `GET /v1/rules?jurisdiction=&payment_type=&tax_year=&limit=&offset=` | Validated rules with page and verbatim quote |
 | `GET /v1/resolve?payment_type=&amount=&jurisdiction=&tax_year=[&payee_type=]` | The v1 contract, unchanged, plus additive fields |
 | `GET /v1/documents`, `GET /health`, `GET /` | Ingested documents, liveness, UI |
@@ -67,9 +69,9 @@ Rel(api, db, "valid rules in, rules and decisions out")
 - **Unknown is `null` plus review, never `false`** (R4). The contract has no other way to say "unknown".
 - **Flat rates with an optional threshold only.** Caps, additive brackets and lookup tables are stored as unsupported and force review. Rejected modelling them: not within 1,500 lines.
 - **Scanned pages are transcribed, then validated like any page, and always flagged.** Rejected trusting what the model says an image contains.
-- **An embedded instruction is recorded in `security_events` and changes neither answer nor flag.**
+- **An embedded instruction is recorded in `security_events` and changes neither answer nor flag.** Shown in `tests/test_api.py::test_embedded_instruction_cannot_change_the_answer_and_is_recorded`.
 - **Own VPS (Easypanel, Docker, SQLite on a volume).** Rejected Vercel (no disk) and Cloudflare free tier (10 ms CPU). I read "any free host" as permission, not a ban on a server I already run.
-- **Logs** (JSON lines): inputs, each step, thresholds, rule page/rate/model version, rules hash. **Redacted:** the amount (only a band, in memory otherwise), keys, URL credentials and query strings. No access log.
+- **Logs** (JSON lines): inputs, each step, thresholds, rule page/rate/model version, rules hash. **Redacted:** the amount (logged only as a band), keys, URL credentials and query strings. **Boundary:** `app/logs.py`; the exact amount exists only in memory for the request. No access log.
 
 ## What was run, and what was not (2026-11-19)
 
