@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS documents (
   security_events TEXT DEFAULT '[]', ingested_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS rules (
-  id INTEGER PRIMARY KEY, document_id INTEGER NOT NULL REFERENCES documents(id),
+  id INTEGER PRIMARY KEY AUTOINCREMENT, document_id INTEGER NOT NULL REFERENCES documents(id),
   source_url TEXT NOT NULL, jurisdiction TEXT NOT NULL, payment_type TEXT NOT NULL,
   tax_year INTEGER NOT NULL, kind TEXT NOT NULL, condition TEXT NOT NULL,
   rate TEXT, flat_amount TEXT, min_amount TEXT, threshold_inclusive INTEGER NOT NULL,
@@ -110,10 +110,8 @@ def rules_version(conn) -> str:
     return "sha256:" + digest.hexdigest()
 
 
-def security_events_for(conn, jurisdiction):
-    """Intentos de instrucción incrustada en los documentos que aportan reglas a la jurisdicción."""
-    rows = conn.execute(
-        "SELECT DISTINCT d.source_url, d.security_events FROM documents d"
-        " JOIN rules r ON r.document_id = d.id WHERE r.jurisdiction = ?", (jurisdiction,))
+def security_events(conn):
+    """Intentos de instrucción incrustada en cualquier documento ingerido, tenga reglas o no."""
+    rows = conn.execute("SELECT source_url, security_events FROM documents ORDER BY id")
     return [dict(e, source_url=row["source_url"]) for row in rows
             for e in json.loads(row["security_events"])]

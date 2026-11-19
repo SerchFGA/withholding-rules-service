@@ -68,7 +68,7 @@ def documents():
 async def ingest(request: Request, x_ingest_key: str | None = Header(default=None)):
     rid, deadline = request.state.request_id, request.state.deadline
     expected = os.environ.get("INGEST_KEY", "")
-    if not expected or not hmac.compare_digest(x_ingest_key or "", expected):
+    if not expected or not hmac.compare_digest((x_ingest_key or "").encode(), expected.encode()):
         return error(401, "ingest_key_required", rid)
     try:
         url = (await request.json())["source_url"]
@@ -79,7 +79,8 @@ async def ingest(request: Request, x_ingest_key: str | None = Header(default=Non
         fetched = await asyncio.to_thread(fetch.fetch, url, deadline)
     except fetch.FetchError as exc:
         return error(502, "fetch_failed", rid, detail=str(exc))
-    conn = db.connect()
+    deadline.check()
+    conn, url = db.connect(), safe_url(url)   # desde aquí solo la URL sin usuario ni parámetros
     known = db.find_document(conn, url)
     if known and known["content_sha256"] == fetched.sha256 and known["status"] == "complete":
         # Mismo contenido ya leído completo: ni registros duplicados ni gasto de modelo.
@@ -91,32 +92,43 @@ async def ingest(request: Request, x_ingest_key: str | None = Header(default=Non
     except ValueError:
         return error(422, "unsupported_document_type", rid)
     pages = await asyncio.to_thread(parse.parse, fetched.content, kind)
+    scanned = [p.number for p in pages if p.source_kind == "vision"]
+    if scanned:   # una página escaneada se transcribe primero; después se valida como cualquier otra
+        images = await asyncio.to_thread(lambda: {n: fetched.content if kind == "image" else
+                                                  parse.render_page_png(fetched.content, n) for n in scanned})
+        pages = await extract.transcribe(pages, images, deadline)
+    deadline.check()
     events = validate.detect_injection(pages)
-    images = {p.number: (fetched.content if kind == "image"
-                         else parse.render_page_png(fetched.content, p.number))
-              for p in pages if p.source_kind == "vision"}
-    result = await extract.extract_claims(pages, safe_url(url), deadline, images=images)
+    result = await extract.extract_claims(pages, url, deadline)
     by_number = {p.number: p for p in pages}
     years, locale = validate.document_years(pages), parse.detect_number_locale(pages)
-    rules, rejected = [], Counter()
+    rules, rejected = {}, Counter()
     for claim in result.claims:
         rule, reason = validate.validate_claim(claim, by_number, years, locale, url)
-        if rule:
-            rules.append(rule)
-        else:
-            rejected[reason] += 1   # lo que no se valida se descarta, no se confía
-    status = "partial" if result.partial else "complete"
+        if rule:   # la misma afirmación repetida es una sola regla
+            rules[json.dumps(rule, sort_keys=True)] = rule
+        else:      # lo que no se valida se descarta, no se confía; y queda escrito por qué
+            rejected[reason] += 1
+            log("claim_rejected", request_id=rid, source_url=url, reason=reason,
+                claim=claim if isinstance(claim, dict) else str(claim)[:200])
+    rules = list(rules.values())
+    for rule in rules:
+        log("rule_stored", request_id=rid, source_url=url, sha256=fetched.sha256,
+            model_version=result.model_version, **rule)
+    unread = [p.number for p in pages if not p.text.strip()]
+    status = "partial" if result.partial or unread else "complete"
     db.replace_document(conn, url, fetched.sha256, kind, len(pages), status, result.model_version,
                         len(result.claims), sum(rejected.values()), events,
                         datetime.now(timezone.utc).isoformat(timespec="seconds"), rules)
     summary = {"source_url": url, "content_sha256": fetched.sha256, "kind": kind,
                "pages": len(pages), "status": status, "cached": False,
                "model_version": result.model_version, "model_calls": result.groups_total,
-               "groups_failed": result.groups_failed, "claims_total": len(result.claims),
+               "groups_failed": result.groups_failed, "unread_pages": unread,
+               "claims_total": len(result.claims),
                "claims_rejected": dict(rejected), "rules_stored": len(rules),
                "security_events": events, "rules_version": db.rules_version(conn)}
     log("ingest", request_id=rid, **summary)
-    if result.partial:   # leído a medias: se dice, y el resolve lo marcará para revisión
+    if status == "partial":   # leído a medias: se dice, y el resolve lo marcará para revisión
         summary["requires_human_review"] = True
         summary["review_reasons"] = ["document_partially_read"]
     return summary
@@ -145,7 +157,8 @@ def parse_query(params) -> Query:
     except (KeyError, InvalidOperation, ValueError):
         raise ValueError("amount_and_tax_year_required")
     payee = params.get("payee_type")
-    if (not amount.is_finite() or amount <= 0 or not 2000 <= year <= 2100
+    if (not amount.is_finite() or not Decimal("0.01") <= amount < Decimal("1e15")
+            or not 2000 <= year <= 2100
             or params.get("payment_type") not in PAYMENT_TYPES
             or not re.match(JURISDICTION_PATTERN, params.get("jurisdiction", ""))
             or (payee is not None and payee not in PAYEE_TYPES)):
@@ -164,7 +177,12 @@ def resolve_endpoint(request: Request):
     deadline.check()
     candidates = db.list_rules(conn, query.jurisdiction, query.payment_type)
     response, record = resolve(query, candidates, db.rules_version(conn),
-                               db.security_events_for(conn, query.jurisdiction))
+                               db.security_events(conn))
+    versions = dict(conn.execute("SELECT source_url, model_version FROM documents"))
+    record["rules_used"] = [   # lo necesario para reconstruir la decisión aunque la regla cambie
+        {"id": r.id, "source_url": r.source_url, "page": r.page, "rate": r.rate and str(r.rate),
+         "min_amount": r.min_amount and str(r.min_amount), "model_version": versions.get(r.source_url)}
+        for r in candidates if r.id in record["rule_ids"]]
     partial = [safe_url(r["source_url"]) for r in conn.execute(
         "SELECT source_url FROM documents WHERE status != 'complete'")]
     if partial:   # R3: un documento leído a medias nunca respalda una decisión sin revisión
