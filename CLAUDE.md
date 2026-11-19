@@ -50,6 +50,7 @@ python .claude/skills/en-curso/en_curso.py estado   # dónde va el trabajo en ma
 python .claude/hooks/verificar.py                   # índice y redacción al día
 ./.venv/Scripts/python -m pytest -q                 # todas las pruebas
 wc -l app/*.py static/*                             # líneas de producción (tope 1.500)
+./.venv/Scripts/python scripts/verify.py            # make verify; necesita ANTHROPIC_API_KEY
 ```
 
 Aquí solo están los comandos que ya existen. Uno nuevo se escribe aquí el mismo día que se

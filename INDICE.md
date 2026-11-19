@@ -31,7 +31,10 @@ dice dónde está cada cosa.
 | `app/` | Código de producción. `models.py` es el contrato entre módulos | Sí |
 | `tests/` | Pruebas, una por módulo | No |
 | `Dockerfile`, `requirements.txt`, `.env.example` | Imagen del servicio, dependencias y variables necesarias (sin valores) | Sí |
-| `static/`, `scripts/`, `README.md` | Todavía no existen. Se crean según `PLAN.md` §5 | Ver `CLAUDE.md` |
+| `static/index.html` | Interfaz de una página, inglés y español, sin dependencias | Sí |
+| `scripts/verify.py`, `Makefile` | `make verify`: pruebas, ingesta real desde base vacía, set de evaluación y una línea por requisito | Sí |
+| `eval/cases.json`, `eval/corpus.json` | Set de evaluación (28 consultas con página y cita) y los cinco documentos del corpus | Sí |
+| `README.md` | Todavía no existe (paso 8 de `PLAN.md` §5) | Sí |
 
 ## 3. Documentos
 
@@ -93,6 +96,7 @@ dice dónde está cada cosa.
 
 | Fecha | Qué cambió |
 |---|---|
+| 2026-11-19 | Entran `static/`, `scripts/`, `Makefile` y el set de evaluación; arreglos de la revisión independiente |
 | 2026-11-19 | `PLAN.md` §2 gana D17 a D23 tras leer el corpus. Empieza el código: `app/` y `tests/` |
 | 2026-11-19 | Nueva carpeta `eval/notas/` con la lectura del corpus (paso 0) |
 | 2026-11-19 | Alojamiento decidido: VPS con Easypanel y SQLite en todos lados (D6, D7). `PLAN.md` gana §9 «Despliegue en el VPS»; los supuestos pasan a §10 |
