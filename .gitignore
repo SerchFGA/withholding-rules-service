@@ -17,3 +17,12 @@ venv/
 .vercel/
 .pytest_cache/
 .playwright-mcp/
+
+# Documentacion interna de trabajo: se queda en disco, fuera del repositorio publico.
+CLAUDE.md
+INDICE.md
+PLAN.md
+PROGRESO.md
+EN-CURSO-historial.md
+.claude/
+eval/notas/
