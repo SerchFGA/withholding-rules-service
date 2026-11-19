@@ -65,30 +65,32 @@ def _evaluate(amount: Decimal, rules: list[Rule], step, thresholds: list) -> tup
         unsupported = [r for r in rules if r.kind != "rate"]
         reason = "unsupported_rule_structure" if unsupported else "no_rate_in_publication"
         return _unknown(), _unknown(), [reason], unsupported, [], []
-    met = []
+    # Una estructura no soportada junto a una tasa (un tope máximo, por ejemplo) no se
+    # ignora en silencio: la tasa se devuelve, pero una persona debe mirarla.
+    extra = [r for r in rules if r.kind != "rate"]
+    flagged = ["unsupported_rule_structure"] if extra else []
+    # Las reglas firmes deciden; las condicionales solo deciden si no hay ninguna firme.
+    pool = [r for r in usable if r.condition == "unconditional"] or usable
+    met, rivals = [], []
     for r in usable:  # paso 5, regla dura del umbral
         ok = r.min_amount is None or amount > r.min_amount or (amount == r.min_amount and r.threshold_inclusive)
         thresholds.append({"rule_id": r.id, "min_amount": None if r.min_amount is None else str(r.min_amount),
                            "inclusive": r.threshold_inclusive, "satisfied": ok})
         if ok:
-            met.append(r)
-    step("threshold", f"{len(met)} of {len(usable)} rules satisfied")
-    # Una estructura no soportada junto a una tasa (un tope máximo, por ejemplo) no se
-    # ignora en silencio: la tasa se devuelve, pero una persona debe mirarla.
-    extra = [r for r in rules if r.kind != "rate"]
-    flagged = ["unsupported_rule_structure"] if extra else []
-    if not met:  # "no se retiene" apoyado en una regla dudosa no sale limpio
-        return _no_withholding(), _no_withholding(), flagged + _doubts(usable), usable + extra, [], []
-    top = max(r.min_amount if r.min_amount is not None else Decimal("-Infinity") for r in met)
-    chosen = [r for r in met if (r.min_amount if r.min_amount is not None else Decimal("-Infinity")) == top]
-    ids = [r.id for r in chosen]
+            (met if r in pool else rivals).append(r)
+    step("threshold", f"{len(met)} of {len(pool)} deciding rules satisfied")
+    if not met:  # "no se retiene" apoyado en una regla dudosa, o con una condicional viva, no sale limpio
+        return _no_withholding(), _no_withholding(), flagged + _doubts(pool + rivals), pool + rivals + extra, [], []
+    chosen, ids = met, [r.id for r in met]
     if len({(r.rate, r.flat_amount) for r in chosen}) > 1:
-        step("most_specific", f"conflicting rules {ids}")
+        # Tasas distintas a la vez: no se supone que el tramo alto reemplace al bajo.
+        step("selection", f"conflicting rules {ids}")
         return _unknown(), _unknown(), ["conflicting_rules"], chosen, [], []
-    step("most_specific", f"rules {ids}")
-    reasons = flagged + _doubts(chosen)  # paso 7: la tasa se devuelve igual, con revisión
-    step("conditions", ",".join(reasons) or "unconditional")
     rate, flat = chosen[0].rate, chosen[0].flat_amount
+    rivals = [r for r in rivals if (r.rate, r.flat_amount) != (rate, flat)]
+    step("selection", f"rules {ids}, conditional rivals {[r.id for r in rivals]}")
+    reasons = flagged + _doubts(chosen + rivals)  # paso 7: la tasa se devuelve igual, con revisión
+    step("conditions", ",".join(reasons) or "unconditional")
     main = _out(True, rate, "percent_of_payment") if rate is not None else _out(True, None, "flat_amount", flat)
     step("unadjusted_outcome", main["basis"])
     policy, applied = main, []
@@ -97,7 +99,7 @@ def _evaluate(amount: Decimal, rules: list[Rule], step, thresholds: list) -> tup
         if flat > rate * amount:
             policy = _out(True, None, "flat_amount", flat)
         step("client_policy", f"higher_of_percent_or_flat: {policy['basis']}")
-    return main, policy, reasons, chosen + extra, chosen, applied
+    return main, policy, reasons, chosen + rivals + extra, chosen, applied
 
 
 def _non_resident_floor(o: dict, amount: Decimal) -> dict:

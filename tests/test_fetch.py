@@ -273,3 +273,22 @@ def test_error_message_has_no_query_string_or_credentials():
     with pytest.raises(FetchError) as info:
         fetch(SECRET_URL, Deadline.start(), make_client(forbidden), make_resolver({"example.org": "10.0.0.1"}))
     assert_safe(info.value)
+
+
+def test_default_client_trusts_the_operating_system_certificate_store(monkeypatch):
+    # Con el almacén del sistema el servicio funciona también detrás de un antivirus o un
+    # proxy corporativo que inspecciona TLS, sin desactivar nunca la verificación.
+    import ssl
+    seen = {}
+
+    class Spy(httpx.Client):
+        def __init__(self, **kwargs):
+            seen.update(kwargs)
+            super().__init__(transport=httpx.MockTransport(lambda request: httpx.Response(200, content=b"%PDF-1.7")))
+
+    monkeypatch.setattr(httpx, "Client", Spy)
+    from app import fetch as fetch_module
+    from app.models import Deadline
+    fetch_module.fetch("https://example.gov/a.pdf", Deadline.start(5),
+                       resolver=lambda *a, **k: [(2, 1, 6, "", ("93.184.216.34", 443))])
+    assert isinstance(seen["verify"], ssl.SSLContext) and seen["verify"].verify_mode == ssl.CERT_REQUIRED

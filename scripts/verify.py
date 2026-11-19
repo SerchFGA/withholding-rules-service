@@ -38,6 +38,9 @@ REQUIREMENTS = {
 }
 
 
+CANARY = "73519.37"
+
+
 def say(text=""):
     print(text, file=sys.__stdout__, flush=True)
 
@@ -71,7 +74,17 @@ def matches(expected, got):
     return diffs
 
 
+def load_dotenv():
+    """Lee .env si existe (nunca se versiona). Lo que ya está en el entorno manda."""
+    env = ROOT / ".env"
+    for line in env.read_text(encoding="utf-8").splitlines() if env.exists() else []:
+        name, sep, value = line.partition("=")
+        if sep and name.strip() and not name.startswith("#"):
+            os.environ.setdefault(name.strip(), value.strip())
+
+
 def main():
+    load_dotenv()
     key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not key:
         say("make verify needs ANTHROPIC_API_KEY in the environment: ingesting the five documents\n"
@@ -82,7 +95,8 @@ def main():
     cases = json.loads((ROOT / "eval" / "cases.json").read_text(encoding="utf-8"))
     live = {name: [] for name in REQUIREMENTS}   # fallos de las comprobaciones en vivo
 
-    with tempfile.TemporaryDirectory() as tmp:
+    # En Windows SQLite puede seguir con el archivo abierto al salir: no es un fallo de la prueba.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         say("== 1/3 Tests ==")
         tests = run_tests(tmp)
 
@@ -124,12 +138,14 @@ def main():
                 passed += not diffs
                 say(f"  {'PASS' if not diffs else 'FAIL'}  {case['id']}" + ("" if not diffs else "  <- " + "; ".join(diffs)))
 
+            # Un monto que no puede coincidir con ningún umbral ni rango: si aparece, es una fuga.
+            client.get("/v1/resolve", params=dict(cases[0]["query"], amount=CANARY))
+
         text = logs.getvalue()
         leaks = [what for what, found in (
             ("API key", key in text), ("ingest key", ingest_key in text),
             ("query string", re.search(r"[?&]amount=", text)),
-            ("exact amount", any(re.search(rf'(?<![\d.]){re.escape(str(c["query"]["amount"]))}(?![\d.])', text)
-                                 for c in cases if len(str(c["query"]["amount"])) >= 5))) if found]
+            ("exact amount", CANARY.split(".")[0] in text)) if found]
         if leaks:
             live["R7 sensitive data"].append("found in logs: " + ", ".join(leaks))
         if '"event": "decision"' not in text:

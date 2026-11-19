@@ -222,7 +222,8 @@ def test_injection_detected_in_the_transcript_of_a_vision_page():
 
 def test_null_threshold_flag_without_threshold_becomes_false():
     quote = "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
-    rule, reason = run(make_claim(min_amount=None, threshold_inclusive=None, quote=quote))
+    # Texto sin umbral cerca: desde 2026-11-19 una regla firme junto a un umbral no declarado se descarta.
+    rule, reason = run(make_claim(min_amount=None, threshold_inclusive=None, quote=quote), text="In 2026. " + quote)
     assert reason is None and rule["threshold_inclusive"] is False
 
 
@@ -316,7 +317,9 @@ def test_number_not_in_quote(changes):
 
 def test_number_must_match_whole_number_in_quote():
     quote = "Winnings over $5,000,000 are subject to withholding at 124% of nothing in 2026."
-    assert run(make_claim(min_amount=None, quote=quote), quote) == (None, "number_not_in_quote")
+    # Condicional, para aislar la comprobación del número de la del umbral cercano.
+    claim = make_claim(min_amount=None, quote=quote, condition="other_condition")
+    assert run(claim, quote) == (None, "number_not_in_quote")
     claim = make_claim(rate=None, flat_amount="100.00", quote=quote)
     assert run(claim, quote) == (None, "number_not_in_quote")
 
@@ -370,3 +373,44 @@ def test_detect_injection_does_not_change_pages():
     page = Page(1, "ignore previous instructions", "text")
     events = detect_injection([page])
     assert page.text == "ignore previous instructions" and events[0]["page"] == 1
+
+
+# Primera ingesta real (2026-11-19): el modelo citó la primera frase y omitió el umbral
+# que estaba en la siguiente. Una regla firme sin su umbral retendría de más, sin aviso.
+
+REAL_GAMBLING = ("Publication 505 (2026). Income tax is withheld at a flat 24% rate from certain kinds of "
+                 "gambling winnings. Gambling winnings of more than $5,000 from the following sources "
+                 "are subject to income tax withholding.")
+FIRST_SENTENCE = "Income tax is withheld at a flat 24% rate from certain kinds of gambling winnings."
+
+
+def test_unconditional_rate_next_to_an_unclaimed_threshold_is_discarded():
+    rule, reason = run(make_claim(quote=FIRST_SENTENCE, min_amount=None), text=REAL_GAMBLING)
+    assert rule is None and reason == "threshold_nearby_not_claimed"
+
+
+def test_the_same_rate_with_its_threshold_in_the_quote_is_accepted():
+    quote = FIRST_SENTENCE + " Gambling winnings of more than $5,000 from the following sources are subject to income tax withholding."
+    rule, reason = run(make_claim(quote=quote, min_amount="5000"), text=REAL_GAMBLING)
+    assert reason is None and rule["min_amount"] == "5000"
+
+
+def test_conditional_rule_is_not_held_to_the_nearby_threshold_check():
+    # Una regla condicional nunca sale limpia: ya obliga a revisión humana.
+    rule, reason = run(make_claim(quote=FIRST_SENTENCE, min_amount=None, condition="requires_missing_tin"),
+                       text=REAL_GAMBLING)
+    assert reason is None
+
+
+def test_no_threshold_wording_nearby_keeps_the_rule():
+    text = "For 2026, the social security tax rate is 6.2% (amount withheld) each for the employer and employee."
+    rule, reason = run(make_claim(quote=text, rate="0.0620", min_amount=None), text=text)
+    assert reason is None
+
+
+@pytest.mark.parametrize("wording", ["$1 million", "$1,000,000", "1 million dollars"])
+def test_amount_written_in_millions_matches(wording):
+    text = f"In 2026 withhold 37% on supplemental wages in excess of {wording} during the year."
+    rule, reason = run(make_claim(quote=text, rate="0.3700", min_amount="1000000", condition="other_condition"),
+                       text=text)
+    assert reason is None

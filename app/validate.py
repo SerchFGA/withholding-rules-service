@@ -17,6 +17,8 @@ _DASHES = re.compile("[‐-―−­]")
 _HYPHEN_BREAK = re.compile(r"([^\W\d_])-\s+(?=[^\W\d_])")
 _YEAR = re.compile(r"(?<![\d$])(?:20\d\d|2100)(?!\d|[.,]\d)")
 _WITHHOLDING = re.compile(r"withh|deduct|reten|contribution|premium")
+# Palabras que anuncian un umbral: si están junto a una regla firme que no declara umbral, se descarta.
+_THRESHOLD = re.compile(r"(?:more than|at least|in excess of|exceed\w*|over|más de|superior\w* a)\s+\$\s?\d")
 _AMOUNT = re.compile(r"[0-9]+(?:\.[0-9]+)?")
 _RATE = re.compile(r"[0-9]+(?:\.[0-9]{1,4})?")  # el contrato da cuatro decimales
 _PERCENT = r"\s*(?:%|percent|per cent|por ciento)"
@@ -82,7 +84,10 @@ def _amount_in(text: str, value: Decimal, number_locale: str) -> bool:
     whole, _, fraction = format(value.normalize(), "f").partition(".")
     body = f"{sep}?".join(f"{int(whole):,}".split(","))
     tail = f"{dec}{fraction}0*" if fraction else f"(?:{dec}0+)?"
-    return re.search(rf"(?<![\d.,]){body}{tail}(?![.,]?\d)", text) is not None
+    forms = [f"{body}{tail}(?![.,]?\d)"]
+    if value and value % 1_000_000 == 0:   # "$1 million"
+        forms.append(rf"{int(value // 1_000_000)}\s+million")
+    return re.search(rf"(?<![\d.,])(?:{'|'.join(forms)})", text) is not None
 
 
 def validate_claim(claim: dict, pages: dict[int, Page], doc_years: set[int],
@@ -109,8 +114,12 @@ def validate_claim(claim: dict, pages: dict[int, Page], doc_years: set[int],
         return None, "quote_not_in_source"
     if c["tax_year"] not in doc_years:
         return None, "tax_year_not_in_document"
-    if not _WITHHOLDING.search(body[max(0, at - CONTEXT_CHARS):at + len(quote) + CONTEXT_CHARS]):
+    window = body[max(0, at - CONTEXT_CHARS):at + len(quote) + CONTEXT_CHARS]
+    if not _WITHHOLDING.search(window):
         return None, "not_a_withholding_statement"
+    if (c["kind"] == "rate" and c["condition"] == "unconditional" and c["min_amount"] is None
+            and _THRESHOLD.search(window)):
+        return None, "threshold_nearby_not_claimed"
     rate, flat, low = (None if c[k] is None else Decimal(c[k])
                        for k in ("rate", "flat_amount", "min_amount"))
     if c["kind"] == "rate" and rate is None and flat is None:

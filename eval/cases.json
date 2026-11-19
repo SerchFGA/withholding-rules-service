@@ -193,37 +193,11 @@
   "confidence": "high"
  },
  {
-  "id": "us-gambling-just-below-threshold",
-  "description": "Gambling winnings one cent under $5,000 are below the stated threshold.",
+  "id": "us-gambling-below-every-threshold",
+  "description": "Gambling winnings of 1,500 to a resident payee: below both thresholds the publication states",
   "query": {
    "payment_type": "gambling_winnings",
-   "amount": "4999.99",
-   "jurisdiction": "US-FED",
-   "tax_year": 2026
-  },
-  "expected": {
-   "withholding_applies": false,
-   "rate": "0.0000",
-   "basis": "none",
-   "requires_human_review": true,
-   "review_reasons": [
-    "payee_type_not_provided"
-   ]
-  },
-  "source": {
-   "document": "p505",
-   "page": 11,
-   "quote": "Gambling winnings of more than $5,000"
-  },
-  "why": "The publication subjects only winnings of more than $5,000 to withholding, so an amount below the stated threshold is not withheld (hard rule). The query does not say who the payee is, so the non-resident hard rule (always withhold) could not be evaluated: the service still answers 'do not withhold' but flags it, because absent data must not count as evidence against withholding.",
-  "confidence": "high"
- },
- {
-  "id": "us-gambling-exactly-at-threshold",
-  "description": "Exactly $5,000 is not 'more than $5,000': the threshold is exclusive.",
-  "query": {
-   "payment_type": "gambling_winnings",
-   "amount": "5000",
+   "amount": "1500",
    "jurisdiction": "US-FED",
    "tax_year": 2026,
    "payee_type": "resident"
@@ -232,16 +206,18 @@
    "withholding_applies": false,
    "rate": "0.0000",
    "basis": "none",
-   "requires_human_review": false,
-   "review_reasons": []
+   "requires_human_review": true,
+   "review_reasons": [
+    "conditional_on_payee_tin"
+   ]
   },
   "source": {
    "document": "p505",
    "page": 11,
    "quote": "Gambling winnings of more than $5,000"
   },
-  "why": "The wording is 'more than $5,000', so a payment of exactly 5,000 does not reach the threshold and is not withheld. The payee is stated as resident, so the non-resident hard rule is evaluated and does not apply: a clean 'do not withhold'.",
-  "confidence": "high"
+  "why": "Regular withholding applies only to gambling winnings of more than $5,000 (page 11), and page 2 states a 24% rule from $2,000 for bingo, slot machines and keno. 1,500 is below both, so the threshold hard rule gives 'do not withhold'. Page 12 adds that backup withholding at 24% applies to any gambling winnings when the payee gives no taxpayer identification number, which the query cannot tell: the answer is flagged for review. This case replaces two earlier ones at 4,999.99 and 5,000: between $2,000 and $5,000 the publication's two thresholds apply to different kinds of gambling that the closed payment_type vocabulary does not separate, so no single expected answer is defensible there.",
+  "confidence": "medium"
  },
  {
   "id": "us-gambling-just-above-threshold",

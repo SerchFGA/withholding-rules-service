@@ -2,6 +2,7 @@
 import hashlib
 import ipaddress
 import socket
+import ssl
 from dataclasses import dataclass
 from urllib.parse import urljoin, urlsplit
 
@@ -62,7 +63,7 @@ def _check_url(url: str, resolver) -> str:
 
 def fetch(url: str, deadline: Deadline, client: httpx.Client | None = None, resolver=None) -> Fetched:
     if client is None:
-        with httpx.Client() as own:
+        with httpx.Client(verify=ssl.create_default_context()) as own:   # almacén del sistema
             return fetch(url, deadline, own, resolver)
     for _ in range(MAX_REDIRECTS + 1):
         deadline.check()

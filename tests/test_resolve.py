@@ -153,14 +153,17 @@ def test_same_year_rules_ignore_other_years():
     assert resp["review_reasons"] == [] and resp["policy_applied"] == []
 
 
-def test_most_specific_rule_wins():
+def test_higher_tier_is_not_assumed_to_replace_the_lower_one():
+    # Cambio de especificación tras la primera ingesta real (2026-11-19): en el corpus los
+    # tramos altos (37 % sobre 1.000.000, Medicare adicional sobre 200.000) se aplican solo
+    # al excedente. Suponer que "gana la más específica" daría una tasa equivocada y limpia.
     rules = [rule(1, rate="0.2200"), rule(2, rate="0.3700", min_amount="1000000")]
-    high, _ = run(rules, amount="1500000")
-    assert high["outcome"]["rate"] == "0.3700" and high["requires_human_review"] is False
-    assert [p["quote"] for p in high["provenance"]] == ["quote 2"]
     low, _ = run(rules, amount="50000")
-    assert low["outcome"]["rate"] == "0.2200"
+    assert low["outcome"]["rate"] == "0.2200" and low["requires_human_review"] is False
     assert [p["quote"] for p in low["provenance"]] == ["quote 1"]
+    high, _ = run(rules, amount="1500000")
+    assert high["outcome"] == UNKNOWN and high["review_reasons"] == ["conflicting_rules"]
+    assert [p["quote"] for p in high["provenance"]] == ["quote 1", "quote 2"]
 
 
 def test_conflicting_rates():
@@ -339,3 +342,36 @@ def test_no_withholding_without_payee_type_needs_review():
     assert resp["outcome"] == NO_WITHHOLDING and resp["review_reasons"] == []
     resp, _ = run(rules, amount="6000")   # cuando sí se retiene, no hace falta el aviso
     assert resp["review_reasons"] == []
+
+
+# Primera ingesta real (2026-11-19): reglas firmes y reglas condicionales conviven.
+
+def test_unconditional_rule_decides_and_a_conditional_rival_only_asks_for_review():
+    # Medicare 1.45 % junto a una tasa de otra sección que depende de una condición.
+    rules = [rule(1, rate="0.0145"), rule(2, rate="0.0174", condition="other_condition")]
+    resp, _ = run(rules)
+    assert resp["outcome"]["rate"] == "0.0145"
+    assert resp["review_reasons"] == ["condition_not_evaluable"]
+    assert [p["quote"] for p in resp["provenance"]] == ["quote 1", "quote 2"]
+
+
+def test_conditional_rule_with_the_same_rate_adds_no_doubt():
+    rules = [rule(1, rate="0.2000"), rule(2, rate="0.2000", condition="other_condition")]
+    resp, _ = run(rules)
+    assert resp["outcome"]["rate"] == "0.2000" and resp["review_reasons"] == []
+
+
+def test_below_the_unconditional_threshold_a_conditional_rule_asks_for_review():
+    # Juego: sobre 5.000 se retiene 24 %; por debajo no, pero la retención de respaldo
+    # (sin número fiscal) sigue pudiendo aplicar. No se retiene, y una persona lo mira.
+    rules = [rule(1, min_amount="5000"), rule(2, condition="requires_missing_tin")]
+    below, _ = run(rules, amount="4999.99", payee="resident")
+    assert below["outcome"] == NO_WITHHOLDING
+    assert below["review_reasons"] == ["conditional_on_payee_tin"]
+    above, _ = run(rules, amount="12000")
+    assert above["outcome"]["rate"] == "0.2400" and above["review_reasons"] == []
+
+
+def test_only_conditional_rules_still_return_the_rate_with_review():
+    resp, _ = run([rule(1, condition="requires_missing_tin")])
+    assert resp["outcome"]["rate"] == "0.2400" and resp["review_reasons"] == ["conditional_on_payee_tin"]

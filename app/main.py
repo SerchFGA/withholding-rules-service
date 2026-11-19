@@ -176,6 +176,8 @@ def resolve_endpoint(request: Request):
     conn = db.connect()
     deadline.check()
     candidates = db.list_rules(conn, query.jurisdiction, query.payment_type)
+    if "-" in query.jurisdiction:   # una regla del país entero vale también en su subdivisión
+        candidates += db.list_rules(conn, query.jurisdiction.split("-")[0], query.payment_type)
     response, record = resolve(query, candidates, db.rules_version(conn),
                                db.security_events(conn))
     versions = dict(conn.execute("SELECT source_url, model_version FROM documents"))

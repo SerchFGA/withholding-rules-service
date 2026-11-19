@@ -209,7 +209,7 @@ def test_request_uses_structured_output_and_supported_parameters():
     call = client.calls[0]
     assert call["model"] == "claude-opus-5-5"
     assert call["max_tokens"] == 16000
-    assert call["output_config"]["effort"] == "low"
+    assert call["output_config"]["effort"] == "medium"
     assert call["output_config"]["format"]["type"] == "json_schema"
     for banned in ("temperature", "top_p", "tool_choice", "tools", "thinking"):
         assert banned not in call

@@ -268,3 +268,13 @@ def test_instruction_inside_a_scanned_page_is_recorded_and_changes_nothing(servi
     summary = service.ingest().json()
     assert summary["security_events"] and summary["rules_stored"] == 1
     assert service.get("/v1/resolve", params=QUERY).json()["outcome"] == WITHHOLD_24
+
+
+def test_country_level_rule_applies_to_a_subdivision_query(service):
+    # Primera ingesta real (2026-11-19): el documento de Ontario declara aportes federales
+    # y el modelo los etiqueta "CA". Una consulta "CA-ON" debe encontrarlos.
+    service.state["claims"] = [dict(GOOD, jurisdiction="US")]
+    assert service.ingest().json()["rules_stored"] == 1
+    assert service.get("/v1/resolve", params=QUERY).json()["outcome"] == WITHHOLD_24
+    other = service.get("/v1/resolve", params=dict(QUERY, jurisdiction="CA-ON")).json()
+    assert other["outcome"]["withholding_applies"] is None
