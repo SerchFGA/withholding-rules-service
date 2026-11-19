@@ -44,6 +44,16 @@ def _public(o: dict, with_flat: bool = False) -> dict:
     return public
 
 
+def _doubts(rules: list[Rule]) -> list[str]:
+    """Motivos de revisión por regla condicional o salida de una página escaneada."""
+    found = []
+    for r in rules:
+        for x in (_CONDITION_REASONS.get(r.condition), "source_page_was_scanned" if r.source_kind == "vision" else None):
+            if x and x not in found:
+                found.append(x)
+    return found
+
+
 def _evaluate(amount: Decimal, rules: list[Rule], step, thresholds: list) -> tuple:
     """Pasos 3 a 9. Devuelve (sin ajustar, ajustado, motivos, citadas, elegidas, política)."""
     if not rules:
@@ -67,8 +77,8 @@ def _evaluate(amount: Decimal, rules: list[Rule], step, thresholds: list) -> tup
     # ignora en silencio: la tasa se devuelve, pero una persona debe mirarla.
     extra = [r for r in rules if r.kind != "rate"]
     flagged = ["unsupported_rule_structure"] if extra else []
-    if not met:
-        return _no_withholding(), _no_withholding(), flagged, usable + extra, [], []
+    if not met:  # "no se retiene" apoyado en una regla dudosa no sale limpio
+        return _no_withholding(), _no_withholding(), flagged + _doubts(usable), usable + extra, [], []
     top = max(r.min_amount if r.min_amount is not None else Decimal("-Infinity") for r in met)
     chosen = [r for r in met if (r.min_amount if r.min_amount is not None else Decimal("-Infinity")) == top]
     ids = [r.id for r in chosen]
@@ -76,10 +86,7 @@ def _evaluate(amount: Decimal, rules: list[Rule], step, thresholds: list) -> tup
         step("most_specific", f"conflicting rules {ids}")
         return _unknown(), _unknown(), ["conflicting_rules"], chosen, [], []
     step("most_specific", f"rules {ids}")
-    reasons = list(flagged)
-    for r in chosen:  # paso 7: la tasa se devuelve igual, con revisión
-        found = [_CONDITION_REASONS.get(r.condition), "source_page_was_scanned" if r.source_kind == "vision" else None]
-        reasons += [x for x in found if x and x not in reasons]
+    reasons = flagged + _doubts(chosen)  # paso 7: la tasa se devuelve igual, con revisión
     step("conditions", ",".join(reasons) or "unconditional")
     rate, flat = chosen[0].rate, chosen[0].flat_amount
     main = _out(True, rate, "percent_of_payment") if rate is not None else _out(True, None, "flat_amount", flat)
@@ -121,9 +128,10 @@ def resolve(query: Query, rules: list[Rule], rules_version: str, security_events
         if payee is not None:
             step("payee_government", "not government")
         year_rules = [r for r in rules if r.tax_year == query.tax_year]
-        fallback = bool(rules) and not year_rules
-        if fallback:  # paso 2: el ajustado usa el año más reciente disponible
-            latest = max(r.tax_year for r in rules)
+        other_years = bool(rules) and not year_rules
+        latest = max((r.tax_year for r in rules if r.tax_year > query.tax_year), default=None)
+        fallback = other_years and latest is not None
+        if fallback:  # paso 2: el ajustado usa el año posterior más reciente
             year_rules = [r for r in rules if r.tax_year == latest]
             step("tax_year", f"no rule for {query.tax_year}: adjusted outcome uses {latest}")
         else:
@@ -133,6 +141,12 @@ def resolve(query: Query, rules: list[Rule], rules_version: str, security_events
             main = _unknown()
             reasons = ["no_rule_for_tax_year", "tax_year_ambiguous_resolved_to_later"] + reasons
             applied = ["later_tax_year"] + applied
+        elif other_years:  # solo hay años anteriores: no hay año posterior al cual ir
+            reasons = ["no_rule_for_tax_year"]
+        if payee is None and _no_withholding() in (main, policy):
+            # Sin saber quién cobra no se evaluó la regla del no residente: un dato ausente
+            # no cuenta como evidencia contra la retención.
+            reasons.append("payee_type_not_provided")
         if payee == "non_resident":  # paso 10: gana al umbral y a los "desconocido"
             if fallback or not chosen:
                 reasons = [x for x in reasons if x not in _SUPERSEDED_BY_HARD_RULE]

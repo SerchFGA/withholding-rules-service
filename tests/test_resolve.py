@@ -103,7 +103,7 @@ def test_non_resident_wins_over_threshold_and_unknowns():
 
 def test_exclusive_threshold_at_the_edge():
     rules = [rule(min_amount="5000", inclusive=False)]
-    at_edge, _ = run(rules, amount="5000")
+    at_edge, _ = run(rules, amount="5000", payee="resident")
     assert at_edge["outcome"] == NO_WITHHOLDING and policy_core(at_edge) == NO_WITHHOLDING
     assert at_edge["requires_human_review"] is False
     assert cited(at_edge) == [("https://example.test/doc1.pdf", 11, "quote 1")]
@@ -138,7 +138,7 @@ def test_only_unsupported_rules():
 
 def test_other_tax_year_resolves_adjusted_to_latest():
     rules = [rule(1, rate="0.2200", year=2024), rule(2, rate="0.2400", year=2025)]
-    resp, record = run(rules, year=2026)
+    resp, record = run(rules, year=2023)
     assert resp["outcome"] == UNKNOWN
     assert policy_core(resp) == {"withholding_applies": True, "rate": "0.2400", "basis": "percent_of_payment"}
     assert "no_rule_for_tax_year" in resp["review_reasons"]
@@ -295,6 +295,47 @@ def test_unsupported_rule_next_to_a_rate_forces_review():
 
 def test_unsupported_rule_next_to_an_unmet_threshold_forces_review():
     rules = [rule(1, min_amount="50000"), rule(2, kind="unsupported_cap", rate=None)]
-    resp, _ = run(rules)
+    resp, _ = run(rules, payee="resident")
     assert resp["outcome"] == NO_WITHHOLDING
     assert resp["review_reasons"] == ["unsupported_rule_structure"]
+
+
+# Hallazgos de la revisión independiente (2026-11-19).
+
+@pytest.mark.parametrize("kwargs, reason", [
+    ({"condition": "other_condition"}, "condition_not_evaluable"),
+    ({"condition": "requires_missing_tin"}, "conditional_on_payee_tin"),
+    ({"source_kind": "vision"}, "source_page_was_scanned"),
+])
+def test_unmet_threshold_of_a_conditional_or_scanned_rule_still_needs_review(kwargs, reason):
+    # "No se retiene" apoyado en una regla dudosa no puede salir limpio.
+    resp, _ = run([rule(1, min_amount="999999999", **kwargs)], payee="resident")
+    assert resp["outcome"] == NO_WITHHOLDING
+    assert resp["review_reasons"] == [reason]
+
+
+def test_only_earlier_years_is_unknown_and_never_called_later():
+    # Con reglas solo de 2024, una consulta de 2026 no tiene "año posterior" al cual ir.
+    resp, _ = run([rule(1, rate="0.2200", year=2024)], year=2026)
+    assert resp["outcome"] == UNKNOWN and policy_core(resp) == UNKNOWN
+    assert resp["review_reasons"] == ["no_rule_for_tax_year"]
+    assert resp["policy_applied"] == [] and resp["provenance"] == []
+
+
+def test_later_year_is_used_only_when_it_is_really_later():
+    resp, _ = run([rule(1, rate="0.2200", year=2026), rule(2, rate="0.2400", year=2027)], year=2025)
+    assert resp["outcome"] == UNKNOWN
+    assert policy_core(resp)["rate"] == "0.2400" and resp["policy_applied"] == ["later_tax_year"]
+    assert resp["review_reasons"] == ["no_rule_for_tax_year", "tax_year_ambiguous_resolved_to_later"]
+
+
+def test_no_withholding_without_payee_type_needs_review():
+    # Sin saber quién cobra no se pudo evaluar la regla del no residente: un dato ausente
+    # no cuenta como evidencia contra la retención.
+    rules = [rule(1, min_amount="5000")]
+    resp, _ = run(rules, amount="100")
+    assert resp["outcome"] == NO_WITHHOLDING and resp["review_reasons"] == ["payee_type_not_provided"]
+    resp, _ = run(rules, amount="100", payee="resident")
+    assert resp["outcome"] == NO_WITHHOLDING and resp["review_reasons"] == []
+    resp, _ = run(rules, amount="6000")   # cuando sí se retiene, no hace falta el aviso
+    assert resp["review_reasons"] == []
