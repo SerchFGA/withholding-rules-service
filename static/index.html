@@ -1,250 +1,255 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Withholding rules service</title>
 <style>
-:root{color-scheme:light dark;--bg:#f5f6f8;--card:#fff;--fg:#1a1f27;--mut:#55606e;--line:#cfd5dd;--bd:#77818f;--acc:#1d4f91;
-  --wbg:#fff4d6;--wfg:#664400;--err:#a11f1f}
-@media (prefers-color-scheme:dark){:root{--bg:#111418;--card:#1a1f26;--fg:#e8ebef;--mut:#a7b0bc;--line:#38414d;--bd:#8a94a2;--acc:#8fbaf2;
-  --wbg:#3b2f0e;--wfg:#f3d78c;--err:#f3a0a0}}
-*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-header,main{max-width:60rem;margin:0 auto;padding:1rem 1rem 0} .top{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;justify-content:space-between}
-h1{font-size:1.35rem;margin:0} h2{font-size:1.1rem;margin:0 0 .75rem} p{margin:.25rem 0} .err{color:var(--err);font-weight:600}
-h3{font-size:.8rem;margin:1rem 0 .25rem;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)} .muted,small{color:var(--mut);font-size:.875rem}
-section{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:1rem;margin-bottom:1rem} details{margin-top:1rem}
-.grid,.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:.75rem;align-items:end} .cols{gap:0 1.5rem;align-items:start}
-label{display:block;font-size:.875rem;font-weight:600;margin-bottom:.2rem} .top label{display:inline;margin-right:.35rem}
-input,select,button{font:inherit;color:inherit;padding:.45rem .6rem;border:1px solid var(--bd);border-radius:4px;background:var(--card);max-width:100%}
-.grid input,.grid select,.grid button{width:100%} button{background:var(--acc);border-color:var(--acc);color:var(--card);font-weight:600;cursor:pointer}
-button:disabled{opacity:.55;cursor:not-allowed} :focus-visible{outline:3px solid var(--acc);outline-offset:2px} a{color:var(--acc);overflow-wrap:anywhere}
-.dec{display:flex;gap:.75rem;align-items:center;border-left:6px solid var(--acc);padding:.5rem .9rem;font-size:1.6rem;font-weight:700;line-height:1.25}
-.dec.no{border-color:var(--mut)} .dec.unk{border-color:var(--wfg)} .warn ul{margin:.25rem 0 0;padding-left:1.2rem} summary{cursor:pointer;font-weight:600}
-.warn{background:var(--wbg);color:var(--wfg);border:1px solid var(--wfg);border-radius:4px;padding:.6rem .9rem;margin-top:.75rem}
-blockquote{margin:.5rem 0 0;padding-left:.75rem;border-left:3px solid var(--line);overflow-wrap:anywhere} ol,ul{font-size:.875rem;overflow-wrap:anywhere}
-.scroll{overflow-x:auto;margin-top:.75rem} table{border-collapse:collapse;width:100%;min-width:46rem;font-size:.875rem;font-variant-numeric:tabular-nums}
-th,td{text-align:left;vertical-align:top;padding:.4rem .6rem;border-bottom:1px solid var(--line)} td:last-child{min-width:18rem}
-.pager{display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;margin-top:.75rem} #dl{list-style:none;margin:0;padding:0;font-size:1rem}
-#dl li{padding:.5rem 0;border-bottom:1px solid var(--line)} #dl span{display:block}
-</style></head><body>
-<header><div class="top"><h1 data-t="title"></h1><div><label for="lang" data-t="lang"></label>
-  <select id="lang"><option value="en" lang="en">English</option><option value="es" lang="es">Español</option></select></div></div>
-  <p id="health" class="muted" role="status"></p></header>
+:root { --bg: #f5f6f8; --card: #fff; --fg: #1a1f27; --mut: #55606e; --line: #cfd5dd; --acc: #1d4f91; --err: #a11f1f; }
+html { background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, "Segoe UI", Roboto, sans-serif; }
+body { margin: 0 auto; max-width: 60rem; padding: 1rem; }
+h1, h2 { font-size: 1.25rem; margin: 0 0 .75rem; }
+h3 { font-size: .8rem; margin: 1rem 0 .25rem; text-transform: uppercase; color: var(--mut); }
+p { margin: .25rem 0; }
+a { color: var(--acc); overflow-wrap: anywhere; }
+.err { color: var(--err); font-weight: 600; }
+.muted, small { color: var(--mut); font-size: .875rem; }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 1rem; margin: 1rem 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .75rem; align-items: end; }
+label { display: block; font-size: .875rem; font-weight: 600; }
+input, select, button { font: inherit; padding: .45rem .6rem; border: 1px solid #77818f; border-radius: 4px; }
+.grid input, .grid select, .grid button { width: 100%; box-sizing: border-box; }
+button { background: var(--acc); border-color: var(--acc); color: #fff; font-weight: 600; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--acc); outline-offset: 2px; }
+.dec { border-left: 6px solid var(--acc); padding: .5rem .9rem; font-size: 1.6rem; font-weight: 700; }
+.warn { background: #fff4d6; color: #664400; border: 1px solid; padding: .6rem .9rem; margin-top: .75rem; }
+blockquote { margin: .5rem 0 0; padding-left: .75rem; border-left: 3px solid var(--line); overflow-wrap: anywhere; }
+.scroll { overflow-x: auto; margin-top: .75rem; }
+table { border-collapse: collapse; width: 100%; min-width: 46rem; font-size: .875rem; }
+th, td { text-align: left; vertical-align: top; padding: .4rem .6rem; border-bottom: 1px solid var(--line); }
+.pager { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-top: .75rem; }
+#dl { list-style: none; padding: 0; }
+#dl li, #dl span { display: block; padding: .25rem 0; }
+</style>
+</head>
+<body>
+<h1>Withholding rules service</h1>
+<p id="health" class="muted" role="status">Loading…</p>
 <main>
-<section aria-labelledby="h-q"><h2 id="h-q" data-t="q_h"></h2><form id="qf" class="grid" novalidate>
-  <div><label for="pt" data-t="f_pt"></label><select id="pt"></select></div><div><label for="ju" data-t="f_j"></label><select id="ju"></select></div>
-  <div><label for="pe" data-t="f_pe"></label><select id="pe"></select></div>
-  <div><label for="am" data-t="f_am"></label><input id="am" type="number" min="0" step="any" inputmode="decimal" required></div>
-  <div><label for="yr" data-t="f_y"></label><input id="yr" type="number" min="2000" max="2100" step="1" value="2026" required></div>
-  <div><button id="qb" type="submit" data-t="go"></button></div></form></section>
-<section aria-labelledby="h-r"><h2 id="h-r" data-t="r_h"></h2><div id="out" aria-live="polite"></div></section>
-<section aria-labelledby="h-ru"><h2 id="h-ru" data-t="ru_h"></h2><div class="grid">
-  <div><label for="fj" data-t="f_j"></label><select id="fj"></select></div><div><label for="fp" data-t="f_pt"></label><select id="fp"></select></div></div>
-  <div class="scroll" tabindex="0" role="region" aria-labelledby="h-ru"><table>
-    <thead><tr><th scope="col" data-t="f_j"></th><th scope="col" data-t="f_pt"></th><th scope="col" data-t="c_y"></th><th scope="col" data-t="c_r"></th>
-      <th scope="col" data-t="c_th"></th><th scope="col" data-t="c_pg"></th><th scope="col" data-t="c_q"></th></tr></thead>
-    <tbody id="rb"></tbody></table></div>
-  <div class="pager"><button id="prev" type="button" data-t="prev"></button><button id="next" type="button" data-t="next"></button>
-    <span id="rs" class="muted" aria-live="polite"></span></div></section>
-<section aria-labelledby="h-d"><h2 id="h-d" data-t="d_h"></h2><ul id="dl"></ul>
-  <h3 data-t="i_h"></h3><form id="inf" class="grid" novalidate>
-  <div><label for="iu" data-t="i_url"></label><input id="iu" type="url" autocomplete="off" required></div>
-  <div><label for="ik" data-t="i_key"></label><input id="ik" type="password" autocomplete="off" required></div>
-  <div><button id="ib" type="submit" data-t="i_go"></button></div></form>
-  <p class="muted" data-t="i_note"></p><div id="ins" aria-live="polite"></div></section>
+<section aria-labelledby="h-q"><h2 id="h-q">Resolve a payment</h2>
+  <form id="qf" class="grid" novalidate>
+    <div><label for="pt">Payment type</label><select id="pt"></select></div>
+    <div><label for="ju">Jurisdiction</label><select id="ju"></select></div>
+    <div><label for="pe">Payee type</label><select id="pe"></select></div>
+    <div><label for="am">Amount</label><input id="am" type="number" min="0" step="any" required></div>
+    <div><label for="yr">Tax year</label><input id="yr" type="number" min="2000" max="2100" value="2026" required></div>
+    <div><button id="qb" type="submit">Resolve</button></div>
+  </form>
+  <div id="out" aria-live="polite"><p class="muted">Fill in the form and press Resolve to see a decision.</p></div>
+</section>
+<section aria-labelledby="h-ru"><h2 id="h-ru">Extracted rules</h2>
+  <div class="grid">
+    <div><label for="fj">Jurisdiction</label><select id="fj"></select></div>
+    <div><label for="fp">Payment type</label><select id="fp"></select></div>
+  </div>
+  <div class="scroll" tabindex="0" role="region" aria-labelledby="h-ru">
+    <table>
+      <thead><tr>
+      <th>Jurisdiction</th><th>Payment type</th><th>Year</th><th>Rate</th><th>Threshold</th><th>Page</th><th>Quote</th>
+      </tr></thead>
+      <tbody id="rb"></tbody>
+    </table>
+  </div>
+  <div class="pager">
+    <button id="prev" type="button" disabled>Previous</button> <button id="next" type="button" disabled>Next</button>
+    <span id="rs" class="muted" aria-live="polite">Loading…</span>
+  </div>
+</section>
+<section aria-labelledby="h-d"><h2 id="h-d">Documents</h2>
+  <ul id="dl"><li class="muted">Loading…</li></ul>
+  <h3>Ingest a document</h3>
+  <form id="inf" class="grid" novalidate>
+    <div><label for="iu">Document URL (https)</label><input id="iu" type="url" autocomplete="off" required></div>
+    <div><label for="ik">Ingest key</label><input id="ik" type="password" autocomplete="off" required></div>
+    <div><button id="ib" type="submit">Ingest</button></div>
+  </form>
+  <div id="ins" aria-live="polite"></div>
+</section>
 </main>
 <script>
-'use strict';
-const PT = ['services', 'wages', 'supplemental_wages', 'gambling_winnings', 'pension_nonperiodic', 'pension_periodic', 'eligible_rollover_distribution',
-  'unemployment_compensation', 'sick_pay', 'interest', 'dividends', 'social_security_tax', 'medicare_tax', 'cpp_contribution', 'ei_premium', 'other'];
-const JU = ['US-FED', 'CA-ON', 'CO'], PE = ['resident', 'non_resident', 'government'], SYM = {yes: '●', no: '○', unk: '?'};
-const D = {en: {
-  title: 'Withholding rules service', lang: 'Language', h_err: '✕ Service status unavailable', h_ok: '{0} documents ingested · rules version {1}',
-  q_h: 'Resolve a payment', f_pt: 'Payment type', f_j: 'Jurisdiction', f_pe: 'Payee type', f_am: 'Amount', f_y: 'Tax year', go: 'Resolve',
-  any: 'Not specified', all: 'All', r_h: 'Result', load: 'Loading…', idle: 'Fill in the form and press Resolve to see a decision.',
-  yes: 'Withhold {0}', flat: 'Withhold a fixed amount', no: 'No withholding', unk: 'Unknown: review required', rev: 'Requires human review',
-  doc_h: 'According to the document', pol_h: 'With the client policy', same: 'The client policy does not change the result.',
-  pa: 'Policy applied: {0}', src_h: 'Source', page: 'Page {0}', q1: '“', q2: '”', how: 'How it was decided', rv: 'Rules version: ',
-  fixed: 'No document is cited: a fixed rule of the service decided this.', rid: 'Request ID: ', e0: 'Could not reach the service.',
-  sec: 'An instruction attempt was detected inside a document; it did not change the result.', e504: 'The service ran out of time. Try again.',
-  e422: 'The request is not valid. Check the values and try again.', e401: 'The ingest key is missing or incorrect.',
-  e502: 'The document could not be downloaded from that URL.', ex: 'The service returned an unexpected error.',
-  v_am: '✕ Amount must be a number greater than 0.', v_y: '✕ Tax year must be between 2000 and 2100.', ru_h: 'Extracted rules', c_y: 'Year',
-  v_in: '✕ Enter the document URL and the ingest key.', c_r: 'Rate', c_th: 'Threshold', c_pg: 'Page', c_q: 'Quote', prev: 'Previous', next: 'Next',
-  range: '{0}–{1} of {2}', none: 'No rules match.', famt: 'fixed {0}', d_h: 'Documents', d_none: 'No documents ingested yet.', pages: '{0} pages',
-  st_complete: '✓ Complete', st_partial: '◐ Partial: read only in part', claims: 'claims: {0} accepted, {1} discarded', i_h: 'Ingest a document',
-  i_url: 'Document URL (https)', i_key: 'Ingest key', i_go: 'Ingest', i_wait: 'Processing. This can take up to 2 minutes…',
-  i_done: '✓ Ingestion finished.', i_note: 'The key travels only with this request. It is not stored.', s_status: 'Status', s_claims: 'Claims',
-  s_cached: '✓ Already ingested with the same content. Nothing changed.', s_rules: 'Rules stored', s_rej: 'Claims discarded',
-  s_sec: 'Security events', s_calls: 'Model calls', jur: {'US-FED': 'United States, federal', 'CA-ON': 'Canada, Ontario', CO: 'Colombia'},
-  pol: {higher_of_percent_or_flat: 'the higher of percentage or fixed amount', later_tax_year: 'most recent tax year available'},
-  pe: {resident: 'Resident', non_resident: 'Non-resident', government: 'Government'},
-  pt: {services: 'Services', wages: 'Wages', supplemental_wages: 'Supplemental wages', gambling_winnings: 'Gambling winnings', other: 'Other',
-    pension_nonperiodic: 'Pension, nonperiodic payment', pension_periodic: 'Pension, periodic payment', interest: 'Interest', dividends: 'Dividends',
-    eligible_rollover_distribution: 'Eligible rollover distribution', unemployment_compensation: 'Unemployment compensation', sick_pay: 'Sick pay',
-    social_security_tax: 'Social security tax', medicare_tax: 'Medicare tax', cpp_contribution: 'CPP contribution', ei_premium: 'EI premium'},
-  rs: {no_rate_in_publication: 'The publication does not state a rate for this payment.', no_rule_for_tax_year: 'There is no rule for that tax year.',
-    tax_year_ambiguous_resolved_to_later: 'The tax year is ambiguous: the most recent one available was used.',
-    conditional_on_payee_tin: 'It depends on whether the payee provided a taxpayer identification number.',
-    optional_withholding_method: 'The rate is an optional withholding method.', conflicting_rules: 'There are rules that contradict each other.',
-    condition_not_evaluable: 'The rule has a condition the service cannot check.', source_page_was_scanned: 'The source was a scanned page.',
-    unsupported_rule_structure: 'There is a cap, bracket or table the service does not compute.',
-    document_partially_read: 'A document was read only in part.', payee_type_not_provided: 'The payee type was not provided.'}
-}, es: {
-  title: 'Servicio de reglas de retención', lang: 'Idioma', h_err: '✕ Estado del servicio no disponible', q_h: 'Consultar un pago',
-  h_ok: '{0} documentos ingeridos · versión de reglas {1}', f_pt: 'Tipo de pago', f_j: 'Jurisdicción', f_pe: 'Tipo de beneficiario', f_am: 'Importe',
-  f_y: 'Año fiscal', go: 'Consultar', any: 'No especificado', all: 'Todos', r_h: 'Resultado', load: 'Cargando…', yes: 'Se retiene {0}',
-  idle: 'Completa el formulario y pulsa Consultar para ver una decisión.', flat: 'Se retiene un importe fijo', no: 'No se retiene',
-  unk: 'Desconocido: requiere revisión', rev: 'Requiere revisión humana', doc_h: 'Según el documento', pol_h: 'Con la política del cliente',
-  same: 'La política del cliente no cambia el resultado.', pa: 'Política aplicada: {0}', src_h: 'Fuente', page: 'Página {0}', q1: '«', q2: '»',
-  fixed: 'No se cita ningún documento: lo decidió una regla fija del servicio.', how: 'Cómo se decidió', rv: 'Versión de reglas: ',
-  sec: 'Se detectó un intento de instrucción dentro de un documento; no cambió el resultado.', rid: 'Identificador de la petición: ',
-  e422: 'La consulta no es válida. Revisa los valores e inténtalo de nuevo.', e504: 'El servicio agotó el tiempo de respuesta. Inténtalo de nuevo.',
-  e401: 'Falta la clave de ingesta o es incorrecta.', e502: 'No se pudo descargar el documento desde esa URL.', ru_h: 'Reglas extraídas',
-  e0: 'No se pudo contactar con el servicio.', ex: 'El servicio devolvió un error inesperado.', v_am: '✕ El importe debe ser un número mayor que 0.',
-  v_y: '✕ El año fiscal debe estar entre 2000 y 2100.', v_in: '✕ Escribe la URL del documento y la clave de ingesta.', c_y: 'Año', c_r: 'Tasa',
-  c_th: 'Umbral', c_pg: 'Página', c_q: 'Cita', prev: 'Anterior', next: 'Siguiente', range: '{0}–{1} de {2}', none: 'Ninguna regla coincide.',
-  famt: 'fijo {0}', d_h: 'Documentos', d_none: 'Aún no se ha ingerido ningún documento.', pages: '{0} páginas', st_complete: '✓ Completo',
-  st_partial: '◐ Parcial: se leyó solo en parte', claims: 'afirmaciones: {0} aceptadas, {1} descartadas', i_h: 'Ingerir un documento',
-  i_url: 'URL del documento (https)', i_key: 'Clave de ingesta', i_go: 'Ingerir', i_wait: 'Procesando. Puede tardar hasta 2 minutos…',
-  i_done: '✓ Ingesta terminada.', i_note: 'La clave viaja solo con esta petición. No se guarda.', s_status: 'Estado', s_claims: 'Afirmaciones',
-  s_cached: '✓ Ya estaba ingerido con el mismo contenido. No cambió nada.', s_rules: 'Reglas guardadas', s_rej: 'Afirmaciones descartadas',
-  s_sec: 'Eventos de seguridad', s_calls: 'Llamadas al modelo', jur: {'US-FED': 'Estados Unidos, federal', 'CA-ON': 'Canadá, Ontario', CO: 'Colombia'},
-  pol: {higher_of_percent_or_flat: 'el mayor entre porcentaje e importe fijo', later_tax_year: 'año fiscal más reciente disponible'},
-  pe: {resident: 'Residente', non_resident: 'No residente', government: 'Gobierno'},
-  pt: {services: 'Servicios', wages: 'Salarios', supplemental_wages: 'Salarios suplementarios', gambling_winnings: 'Ganancias de juegos de azar',
-    pension_nonperiodic: 'Pensión, pago no periódico', pension_periodic: 'Pensión, pago periódico', interest: 'Intereses', dividends: 'Dividendos',
-    eligible_rollover_distribution: 'Distribución elegible para reinversión', unemployment_compensation: 'Compensación por desempleo', other: 'Otro',
-    sick_pay: 'Pago por enfermedad', social_security_tax: 'Impuesto del Seguro Social', medicare_tax: 'Impuesto de Medicare',
-    cpp_contribution: 'Contribución al CPP', ei_premium: 'Prima del EI'},
-  rs: {no_rate_in_publication: 'La publicación no declara una tasa para este pago.', no_rule_for_tax_year: 'No hay regla para ese año fiscal.',
-    tax_year_ambiguous_resolved_to_later: 'El año fiscal es ambiguo: se usó el más reciente disponible.',
-    conditional_on_payee_tin: 'Depende de si el beneficiario entregó su número de identificación fiscal.',
-    optional_withholding_method: 'La tasa es un método de retención opcional.', conflicting_rules: 'Hay reglas que se contradicen.',
-    condition_not_evaluable: 'La regla tiene una condición que el servicio no puede comprobar.',
-    unsupported_rule_structure: 'Hay un tope, tramo o tabla que el servicio no calcula.', source_page_was_scanned: 'La fuente era una página escaneada.',
-    document_partially_read: 'Un documento se leyó solo en parte.', payee_type_not_provided: 'No se indicó el tipo de beneficiario.'}
-}};
-const S = {off: 0}, $ = id => document.getElementById(id);
-let lang = ''; try { lang = localStorage.getItem('lang') || ''; } catch (e) { lang = ''; }
-if (!D[lang]) lang = /^es/i.test(navigator.language || '') ? 'es' : 'en';
-const t = (k, ...a) => String(D[lang][k] ?? k).replace(/\{(\d)\}/g, (m, i) => a[i]);
-const G = (g, k) => D[lang][g][k] || String(k);   // una clave desconocida se muestra tal cual
-function el(tag, text, cls) { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
-function list(tag, items) { const l = el(tag); for (const i of items) l.append(el('li', i)); return l; }
-function warn(title, items) { const w = el('div', null, 'warn'); w.append(el('strong', '! ' + title), list('ul', items)); return w; }
-function link(url) {   // solo https; todo lo demás queda como texto
-  if (!/^https:\/\//i.test(String(url))) return el('span', String(url));
-  const a = el('a', url); a.href = url; a.rel = 'noopener noreferrer'; a.target = '_blank'; return a;
+const JUR = {'US-FED': 'United States, federal', 'CA-ON': 'Canada, Ontario', CO: 'Colombia'};
+const PAYEE = {resident: 'Resident', non_resident: 'Non-resident', government: 'Government'};
+const STATUS = {complete: '✓ Complete', partial: '◐ Partial: read only in part'};
+const PAYMENT = {
+  services: 'Services', wages: 'Wages', supplemental_wages: 'Supplemental wages',
+  gambling_winnings: 'Gambling winnings', pension_nonperiodic: 'Pension, nonperiodic payment',
+  pension_periodic: 'Pension, periodic payment', eligible_rollover_distribution: 'Eligible rollover distribution',
+  unemployment_compensation: 'Unemployment compensation', sick_pay: 'Sick pay', interest: 'Interest',
+  dividends: 'Dividends', social_security_tax: 'Social security tax', medicare_tax: 'Medicare tax',
+  cpp_contribution: 'CPP contribution', ei_premium: 'EI premium', other: 'Other'
+};
+const POLICY = {higher_of_percent_or_flat: 'the higher of percentage or fixed amount'};
+POLICY.later_tax_year = 'most recent tax year available';
+const REASON = {
+  no_rate_in_publication: 'The publication does not state a rate for this payment.',
+  no_rule_for_tax_year: 'There is no rule for that tax year.', source_page_was_scanned: 'The source page was scanned.',
+  tax_year_ambiguous_resolved_to_later: 'The tax year is ambiguous: the most recent one available was used.',
+  conditional_on_payee_tin: 'It depends on whether the payee provided a taxpayer identification number.',
+  optional_withholding_method: 'The rate is an optional withholding method.',
+  conflicting_rules: 'There are rules that contradict each other.',
+  condition_not_evaluable: 'The rule has a condition the service cannot check.',
+  unsupported_rule_structure: 'There is a cap, bracket or table the service does not compute.',
+  document_partially_read: 'A document was read only in part.', payee_type_not_provided: 'No payee type was provided.'
+};
+const ERR = {
+  0: 'Could not reach the service.', 401: 'The ingest key is missing or incorrect.',
+  422: 'The request is not valid. Check the values and try again.',
+  502: 'The document could not be downloaded from that URL.', 504: 'The service ran out of time. Try again.'
+};
+let off = 0;
+const $ = id => document.getElementById(id);
+const name = (map, k) => map[k] || String(k);   // an unknown key is shown as is
+function el(tag, text, cls, ...kids) {
+  const e = Object.assign(document.createElement(tag), {textContent: text ?? '', className: cls || ''});
+  e.append(...kids);
+  return e;
 }
-function cite(text, url) { const p = el('p', text, 'muted'); p.append(link(url)); return p; }
-function pct(r) {   // "0.0620" a 6.2 moviendo el punto en el texto, sin pasar por coma flotante
-  const m = /^(\d+)(?:\.(\d+))?$/.exec(String(r)); if (!m) return String(r);
-  const f = (m[2] || '').padEnd(2, '0'), i = (m[1] + f.slice(0, 2)).replace(/^0+(?=\d)/, ''), d = f.slice(2).replace(/0+$/, '');
-  return lang === 'es' ? i + (d ? ',' + d : '') + ' %' : i + (d ? '.' + d : '') + '%';
+const list = (tag, items) => el(tag, null, '', ...items.map(i => el('li', i)));
+const warn = (title, items) => el('div', null, 'warn', el('strong', '! ' + title), list('ul', items));
+function link(url) {   // https only; anything else stays as text
+  if (!/^https:\/\//i.test(String(url))) return el('span', String(url));
+  return Object.assign(el('a', url), {href: url, rel: 'noopener noreferrer', target: '_blank'});
+}
+function pct(r) {   // "0.0620" to "6.2%" by moving the point in the text, without floating point
+  const m = /^(\d+)(?:\.(\d+))?$/.exec(String(r));
+  if (!m) return String(r);
+  const frac = (m[2] || '').padEnd(2, '0');
+  const moved = (m[1] + frac.slice(0, 2)).replace(/^0+(?=\d)/, '') + '.' + frac.slice(2);
+  return moved.replace(/\.?0*$/, '') + '%';
 }
 function say(o) {
-  if (!o.withholding_applies) return t(o.withholding_applies == null ? 'unk' : 'no');
-  return o.rate != null ? t('yes', pct(o.rate)) : t('flat') + (o.flat_amount ? ': ' + o.flat_amount : '');
+  if (!o.withholding_applies) return o.withholding_applies == null ? 'Unknown: review required' : 'No withholding';
+  if (o.rate != null) return 'Withhold ' + pct(o.rate);
+  return 'Withhold a fixed amount' + (o.flat_amount ? ': ' + o.flat_amount : '');
 }
-async function api(path, opt) {   // nunca lanza: un fallo de red vuelve como status 0 y se muestra
-  let r, body = {};
-  try { r = await fetch(path, opt); body = (await r.json()) || {}; } catch (e) { if (!r) return {ok: false, status: 0, body}; }
-  return {ok: r.ok, status: r.status, body};
+async function api(path, opt) {   // never throws: a network failure comes back as status 0 and is shown
+  const r = await fetch(path, opt).catch(() => null);
+  const body = (r && await r.json().catch(() => null)) || {};
+  return {ok: !!r && r.ok, status: r ? r.status : 0, body};
 }
 function errEl(x, tag) {
-  const b = x.body, k = 'e' + x.status, p = el(tag || 'p', '✕ ' + t(D[lang][k] ? k : 'ex') + ' ', 'err');
-  const more = [x.status || null, b.error, typeof b.detail === 'string' ? b.detail : null, b.request_id].filter(Boolean).join(' · ');
-  if (more) p.append(el('small', '[' + more + ']')); return p;
+  const b = x.body, detail = typeof b.detail === 'string' ? b.detail : null;
+  const more = [x.status || null, b.error, detail, b.request_id].filter(Boolean).join(' · ');
+  const text = '✕ ' + (ERR[x.status] || 'The service returned an unexpected error.') + ' ';
+  return el(tag || 'p', text, 'err', el('small', more && '[' + more + ']'));
 }
-function fill(id, vals, grp, first) {
-  const s = $(id), v = s.value; s.replaceChildren(...(first ? [new Option(t(first), '')] : []));
-  for (const k of vals) s.append(new Option(grp === 'jur' ? G(grp, k) + ' (' + k + ')' : G(grp, k), k));
+function fill(id, map, first) {
+  const s = $(id), v = s.value;
+  s.replaceChildren(...(first ? [new Option(first, '')] : []));
+  for (const k of Object.keys(map)) s.append(new Option(map === JUR ? map[k] + ' (' + k + ')' : map[k], k));
   if (v) s.value = v;
 }
-function renderResult() {
-  const box = $('out'), x = S.res; box.replaceChildren();
-  if (!x || x.msg) return box.append(el('p', t(x ? x.msg : 'idle'), x && x.msg !== 'load' ? 'err' : 'muted'));
-  if (!x.ok) return box.append(errEl(x));
-  const b = x.body, o = b.outcome || {}, p = b.policy_outcome || {}, prov = b.provenance || [], sec = b.security_events || [];
-  const k = o.withholding_applies === true ? 'yes' : o.withholding_applies === false ? 'no' : 'unk', card = el('div', null, 'dec ' + k);
-  const sym = el('span', SYM[k]); sym.setAttribute('aria-hidden', 'true'); card.append(sym, el('span', say(o))); box.append(card);
-  if (b.requires_human_review) box.append(warn(t('rev'), (b.review_reasons || []).map(r => G('rs', r))));
-  const cols = el('div', null, 'cols'), c1 = el('div'), c2 = el('div'); c1.append(el('h3', t('doc_h')), el('p', say(o)));
-  const same = o.withholding_applies === p.withholding_applies && o.rate === p.rate && o.basis === p.basis && !p.flat_amount;
-  c2.append(el('h3', t('pol_h')), el('p', same ? t('same') : say(p)));
-  if ((b.policy_applied || []).length) c2.append(el('p', t('pa', b.policy_applied.map(a => G('pol', a)).join(', ')), 'muted'));
-  cols.append(c1, c2); box.append(cols); if (prov.length || k !== 'unk') box.append(el('h3', t('src_h')));
-  for (const s of prov) box.append(el('blockquote', t('q1') + s.quote + t('q2')), cite(t('page', s.page) + ' · ', s.source_url));
-  if (!prov.length && k !== 'unk') box.append(el('p', t('fixed'), 'muted'));
-  if (sec.length) box.append(warn(t('sec'), sec.map(e => t('page', e.page) + ': ' + e.excerpt)));
-  const d = el('details'); d.append(el('summary', t('how')), list('ol', (b.decision_trace || []).map(s => s.step + ': ' + s.result)));
-  d.append(el('p', t('rv') + b.rules_version, 'muted'), el('p', t('rid') + b.request_id, 'muted')); box.append(d);
+function renderResult(x) {
+  const box = $('out');
+  if (typeof x === 'string') return box.replaceChildren(el('p', x, x.startsWith('✕') ? 'err' : 'muted'));
+  if (!x.ok) return box.replaceChildren(errEl(x));
+  const b = x.body, o = b.outcome || {}, p = b.policy_outcome || {}, prov = b.provenance || [];
+  box.replaceChildren(el('div', say(o), 'dec'));
+  const reasons = (b.review_reasons || []).map(r => name(REASON, r));
+  if (b.requires_human_review) box.append(warn('Requires human review', reasons));
+  const same = o.withholding_applies === p.withholding_applies && o.rate === p.rate && o.basis === p.basis;
+  const policy = same && !p.flat_amount ? 'The client policy does not change the result.' : say(p);
+  box.append(el('h3', 'With the client policy'), el('p', policy));
+  const applied = (b.policy_applied || []).map(a => name(POLICY, a));
+  if (applied.length) box.append(el('p', 'Policy applied: ' + applied.join(', '), 'muted'));
+  const cite = s => [el('blockquote', `“${s.quote}”`), el('p', `Page ${s.page} · `, 'muted', link(s.source_url))];
+  const none = el('p', 'No document is cited: a fixed rule of the service decided this.', 'muted');
+  const known = typeof o.withholding_applies === 'boolean';
+  if (prov.length || known) box.append(el('h3', 'Source'), ...(prov.length ? prov.flatMap(cite) : [none]));
+  const sec = (b.security_events || []).map(e => 'Page ' + e.page + ': ' + e.excerpt);
+  const attempt = 'An instruction attempt was detected inside a document; it did not change the result.';
+  if (sec.length) box.append(warn(attempt, sec));
 }
-function renderRules() {
-  const tb = $('rb'), x = S.rules, b = (x && x.body) || {}, items = (x && x.ok && b.items) || [], total = b.total || 0; tb.replaceChildren();
+function renderRules(x) {
+  const items = (x.ok && x.body.items) || [], total = x.body.total || 0;
+  $('rb').replaceChildren();
   for (const r of items) {
-    const tr = el('tr'), rate = r.rate != null ? pct(r.rate) : r.flat_amount != null ? t('famt', r.flat_amount) : '·'; tb.append(tr);
-    const th = r.min_amount != null ? (r.threshold_inclusive ? '≥ ' : '> ') + r.min_amount : '·';
-    for (const v of [r.jurisdiction, G('pt', r.payment_type), r.tax_year, rate, th, r.page, t('q1') + r.quote + t('q2')]) tr.append(el('td', v));
+    const rate = r.rate != null ? pct(r.rate) : r.flat_amount != null ? 'fixed ' + r.flat_amount : '·';
+    const min = r.min_amount != null ? (r.threshold_inclusive ? '≥ ' : '> ') + r.min_amount : '·';
+    const cells = [r.jurisdiction, name(PAYMENT, r.payment_type), r.tax_year, rate, min, r.page, '“' + r.quote + '”'];
+    $('rb').append(el('tr', null, '', ...cells.map(v => el('td', v))));
   }
-  $('rs').replaceChildren(!x ? t('load') : !x.ok ? errEl(x, 'span') : total ? t('range', S.off + 1, S.off + items.length, total) : t('none'));
-  $('prev').disabled = S.off <= 0; $('next').disabled = S.off + 20 >= total;
+  const range = total ? (off + 1) + '–' + (off + items.length) + ' of ' + total : 'No rules match.';
+  $('rs').replaceChildren(x.ok ? range : errEl(x, 'span'));
+  $('prev').disabled = off <= 0;
+  $('next').disabled = off + 20 >= total;
 }
-function renderDocs() {
-  const ul = $('dl'), x = S.docs, h = S.health; ul.replaceChildren();
-  $('health').textContent = !h ? t('load') : !h.ok ? t('h_err') : t('h_ok', h.body.documents, String(h.body.rules_version || '').slice(0, 12));
-  if (!x || !x.ok) return ul.append(x ? errEl(x, 'li') : el('li', t('load'), 'muted'));
-  const items = x.body.items || []; if (!items.length) ul.append(el('li', t('d_none'), 'muted'));
-  for (const d of items) {
-    const li = el('li'), when = new Date(d.ingested_at), st = 'st_' + d.status;
-    const date = isNaN(when) ? String(d.ingested_at) : when.toLocaleString(lang, {dateStyle: 'medium', timeStyle: 'short'});
-    const info = [t('pages', d.pages), t('claims', d.claims_total - d.claims_rejected, d.claims_rejected), date].join(' · ');
-    li.append(link(d.source_url), el('span', D[lang][st] ? t(st) : String(d.status)), el('span', info, 'muted')); ul.append(li);
-  }
+function renderDocs({ok, body}, x) {
+  const text = `${body.documents} documents ingested · rules version ${String(body.rules_version || '').slice(0, 12)}`;
+  $('health').textContent = ok ? text : '✕ Service status unavailable';
+  if (!x.ok) return $('dl').replaceChildren(errEl(x, 'li'));
+  const rows = (x.body.items || []).map(d => {
+    const when = new Date(d.ingested_at), style = {dateStyle: 'medium', timeStyle: 'short'};
+    const date = isNaN(when) ? String(d.ingested_at) : when.toLocaleString('en', style);
+    const claims = `claims: ${d.claims_total - d.claims_rejected} accepted, ${d.claims_rejected} discarded`;
+    const info = el('span', [d.pages + ' pages', claims, date].join(' · '), 'muted');
+    return el('li', null, '', link(d.source_url), el('span', name(STATUS, d.status)), info);
+  });
+  if (!rows.length) rows.push(el('li', 'No documents ingested yet.', 'muted'));
+  $('dl').replaceChildren(...rows);
 }
-function renderIngest() {
-  const box = $('ins'), x = S.ing; box.replaceChildren();
-  if (!x || x.msg) return x && box.append(el('p', t(x.msg), x.msg === 'i_wait' ? 'muted' : 'err'));
-  if (!x.ok) return box.append(errEl(x));
-  const b = x.body, n = v => (v && typeof v === 'object' ? Object.values(v).reduce((a, c) => a + c, 0) : v);
-  const rows = [['s_status', D[lang]['st_' + b.status] ? t('st_' + b.status) : b.status], ['s_rules', b.rules_stored], ['s_claims', b.claims_total],
-    ['s_rej', n(b.claims_rejected)], ['s_sec', b.security_events && b.security_events.length], ['s_calls', b.model_calls]];
-  box.append(el('p', t(b.cached ? 's_cached' : 'i_done')), list('ul', rows.filter(r => r[1] != null).map(r => t(r[0]) + ': ' + r[1])));
+function renderIngest(x) {
+  if (typeof x === 'string') return $('ins').replaceChildren(el('p', x, x.startsWith('✕') ? 'err' : 'muted'));
+  if (!x.ok) return $('ins').replaceChildren(errEl(x));
+  const b = x.body, rows = [['Status', STATUS[b.status] || b.status], ['Rules stored', b.rules_stored]];
+  const done = b.cached ? '✓ Already ingested with the same content. Nothing changed.' : '✓ Ingestion finished.';
+  $('ins').replaceChildren(el('p', done), list('ul', rows.filter(r => r[1] != null).map(r => r.join(': '))));
 }
-function render() {
-  document.documentElement.lang = lang; document.title = t('title'); $('lang').value = lang;
-  document.querySelectorAll('[data-t]').forEach(n => { n.textContent = t(n.dataset.t); });
-  fill('pt', PT, 'pt'); fill('ju', JU, 'jur'); fill('pe', PE, 'pe', 'any'); fill('fj', JU, 'jur', 'all'); fill('fp', PT, 'pt', 'all');
-  renderResult(); renderRules(); renderDocs(); renderIngest();
+async function loadRules(offset) {
+  off = Math.max(0, offset);
+  const q = new URLSearchParams({limit: 20, offset: off});
+  if ($('fj').value) q.set('jurisdiction', $('fj').value);
+  if ($('fp').value) q.set('payment_type', $('fp').value);
+  renderRules(await api('/v1/rules?' + q));
 }
-async function loadRules() {
-  const q = new URLSearchParams({limit: 20, offset: S.off});
-  for (const [id, name] of [['fj', 'jurisdiction'], ['fp', 'payment_type']]) if ($(id).value) q.set(name, $(id).value);
-  S.rules = await api('/v1/rules?' + q); renderRules();
+async function loadDocs() {   // a new document may bring a jurisdiction with no known name: it is listed by its key
+  const [health, docs] = await Promise.all([api('/health'), api('/v1/documents')]);
+  for (const j of health.body.jurisdictions || []) JUR[j] = JUR[j] || j;
+  fill('ju', JUR);
+  fill('fj', JUR, 'All');
+  renderDocs(health, docs);
 }
-async function loadDocs() {
-  [S.health, S.docs] = await Promise.all([api('/health'), api('/v1/documents')]);
-  for (const j of (S.health.body || {}).jurisdictions || []) if (!JU.includes(j)) JU.push(j);  // a new document may bring a new one
-  fill('ju', JU, 'jur'); fill('fj', JU, 'jur', 'all'); renderDocs();
-}
-$('lang').addEventListener('change', e => { lang = e.target.value; try { localStorage.setItem('lang', lang); } catch (err) { /* sin almacén */ } render(); });
 $('qf').addEventListener('submit', async e => {
-  e.preventDefault(); const am = $('am').value.trim(), yr = Number($('yr').value);
-  const bad = !(Number(am) > 0) ? 'v_am' : !Number.isInteger(yr) || yr < 2000 || yr > 2100 ? 'v_y' : '';
-  if (bad) { S.res = {msg: bad}; return renderResult(); }
+  e.preventDefault();
+  const am = $('am').value.trim(), yr = Number($('yr').value);
+  if (!(Number(am) > 0)) return renderResult('✕ Amount must be a number greater than 0.');
+  if (!Number.isInteger(yr) || yr < 2000 || yr > 2100) return renderResult('✕ Tax year must be between 2000 and 2100.');
   const q = new URLSearchParams({payment_type: $('pt').value, amount: am, jurisdiction: $('ju').value, tax_year: yr});
   if ($('pe').value) q.set('payee_type', $('pe').value);
-  $('qb').disabled = true; S.res = {msg: 'load'}; renderResult();
-  S.res = await api('/v1/resolve?' + q); $('qb').disabled = false; renderResult();
+  $('qb').disabled = true;
+  renderResult('Loading…');
+  renderResult(await api('/v1/resolve?' + q));
+  $('qb').disabled = false;
 });
-for (const id of ['fj', 'fp']) $(id).addEventListener('change', () => { S.off = 0; loadRules(); });
-for (const [id, step] of [['prev', -20], ['next', 20]]) $(id).addEventListener('click', () => { S.off = Math.max(0, S.off + step); loadRules(); });
+for (const id of ['fj', 'fp']) $(id).addEventListener('change', () => loadRules(0));
+for (const [id, step] of [['prev', -20], ['next', 20]]) $(id).addEventListener('click', () => loadRules(off + step));
 $('inf').addEventListener('submit', async e => {
-  e.preventDefault(); const u = $('iu').value.trim(), key = $('ik').value;
-  if (!u || !key) { S.ing = {msg: 'v_in'}; return renderIngest(); }
-  $('ib').disabled = true; S.ing = {msg: 'i_wait'}; renderIngest();
-  const opt = {method: 'POST', headers: {'Content-Type': 'application/json', 'X-Ingest-Key': key}, body: JSON.stringify({source_url: u})};
-  S.ing = await api('/v1/documents', opt); $('ib').disabled = false; renderIngest();
-  if (S.ing.ok) { S.off = 0; loadRules(); loadDocs(); }
+  e.preventDefault();
+  const url = $('iu').value.trim(), key = $('ik').value;
+  if (!url || !key) return renderIngest('✕ Enter the document URL and the ingest key.');
+  $('ib').disabled = true;
+  renderIngest('Processing. This can take up to 2 minutes…');
+  const headers = {'Content-Type': 'application/json', 'X-Ingest-Key': key};
+  const res = await api('/v1/documents', {method: 'POST', headers, body: JSON.stringify({source_url: url})});
+  $('ib').disabled = false;
+  renderIngest(res);
+  if (res.ok) await Promise.all([loadRules(0), loadDocs()]);
 });
-render(); loadRules(); loadDocs();
-</script></body></html>
+fill('pt', PAYMENT);
+fill('pe', PAYEE, 'Not specified');
+fill('fp', PAYMENT, 'All');
+loadRules(0);
+loadDocs();
+</script>
+</body>
+</html>

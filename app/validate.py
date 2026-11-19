@@ -27,7 +27,7 @@ _INJECTION = {name: re.compile(pattern) for name, pattern in (
     ("ignore_instructions", r"\bignore (?:(?:all|any|the|your|these) )*(?:previous|prior|above|earlier)"
      r" (?:instructions|prompts?|rules)|\b(?:ignor|olvid|omit)[ae]\w* (?:todas )?(?:las |tus )?instrucciones"),
     ("disregard_instructions", r"\bdisregard (?:\w+ ){0,4}instructions"),
-    ("role_override", r"\byou are now\b|\bahora eres\b|\beres ahora\b"),
+    ("role_override", r"\byou are now (?:an?|the|in|my|our)\b|\bahora eres\b|\beres ahora\b"),
     ("system_prompt", r"system prompt|prompt del? sistema"),
     ("report_no_withholding", r"\breport (?:that )?(?:there is )?no withholding"
      r"|\bno report\w+ (?:la |ninguna )?retenci[oó]n"))}

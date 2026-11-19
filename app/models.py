@@ -1,7 +1,4 @@
-"""Vocabulario cerrado y tipos compartidos. Es el contrato entre los módulos.
-
-Nada de aquí llama al modelo ni a la red. Un valor fuera de estas listas se rechaza.
-"""
+"""Vocabulario cerrado y tipos compartidos: el contrato entre módulos. Sin modelo ni red."""
 import time
 from dataclasses import dataclass, field
 from decimal import Decimal
