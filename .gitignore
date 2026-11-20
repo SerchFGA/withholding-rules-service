@@ -26,3 +26,6 @@ PROGRESO.md
 EN-CURSO-historial.md
 .claude/
 eval/notas/
+
+# Guias locales
+*.docx
