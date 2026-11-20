@@ -75,7 +75,7 @@ Rel(api, db, "valid rules in, rules and decisions out")
 
 ## What was run, and what was not (2026-11-19)
 
-- **Production, from an empty database:** five documents ingested by the pipeline in 61 s total (slowest 21 s), 38 rules, 4 claims discarded. Evaluation: **25/27**. Both misses return a safe answer with review: `services` adds a second review reason, and supplemental wages reports `conflicting_rules` (22% optional, 37% mandatory).
+- **Production:** five documents ingested by the pipeline (first from an empty database, then re-read once after the pipeline version changed) in 57 s total (slowest 20 s), 37 rules, 2 claims discarded. Evaluation: **25/27**. Misses: supplemental wages returns `conflicting_rules` with review instead of the optional 22%; the Ontario EI premium returns the right 1.63% but without the annual-maximum warning, because that run did not extract the cap.
 - **Extraction varies between runs** by one or two cases; effort `medium` reduced it. Expect accuracy to move.
 - **Ontario:** the URL in the brief (`t4032on-1-26e.pdf`) returns 404; I use the current official file, `t4032-on-1-26e.pdf`. canada.ca drops some automated clients: from my laptop it times out, so there `make verify` reports the corpus line as FAIL for that one document. From the server it downloads.
 - **Designed, not exercised:** transcription of scanned pages against the real model (simulated model only); the "higher of percentage or flat amount" policy on real data (no live rule states both); the DNS-rebinding window in `fetch.py`; HTML with unclosed `header`/`nav` tags.
