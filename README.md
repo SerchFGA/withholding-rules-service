@@ -38,6 +38,13 @@ Additive fields: `policy_outcome` (client policy applied; `outcome` stays the un
 (`government`, `non_resident`, `resident`) is an **optional parameter I added**: two hard rules depend
 on who is paid and the sample query does not say. Without it, a "do not withhold" answer is flagged.
 
+The service is the API the orchestrator calls. The UI at `/` is a thin demo client for the live round.
+
+**Logs** are JSON lines on stdout: in the terminal running `make run`, in `docker logs`, or in the
+Easypanel Logs tab. One `decision` event per resolve (inputs with the amount as a band, each step,
+thresholds, rules used with page, rate and model version, rules hash) and one `rule_stored` or
+`claim_rejected` event per model claim at ingestion. Decisions are also kept in the `decisions` table.
+
 ```mermaid
 C4Component
 title Withholding rules service (components)
