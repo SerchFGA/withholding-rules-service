@@ -20,7 +20,7 @@ def D(value):
 
 def rule(id=1, rate="0.2400", flat=None, min_amount=None, inclusive=False, year=2026,
          kind="rate", condition="unconditional", source_kind="text"):
-    return Rule(id=id, source_url=f"https://example.test/doc{id}.pdf", jurisdiction="US-FED",
+    return Rule(id=id, source_url=f"https://www.irs.gov/doc{id}.pdf", jurisdiction="US-FED",
                 payment_type="services", tax_year=year, kind=kind, condition=condition,
                 rate=D(rate), flat_amount=D(flat), min_amount=D(min_amount),
                 threshold_inclusive=inclusive, page=10 + id, quote=f"quote {id}",
@@ -87,7 +87,7 @@ def test_non_resident_raises_document_rate_to_minimum():
 def test_non_resident_keeps_higher_document_rate():
     resp, _ = run([rule(rate="0.3700")], payee="non_resident")
     assert resp["outcome"]["rate"] == "0.3700" and resp["policy_outcome"]["rate"] == "0.3700"
-    assert cited(resp) == [("https://example.test/doc1.pdf", 11, "quote 1")]
+    assert cited(resp) == [("https://www.irs.gov/doc1.pdf", 11, "quote 1")]
 
 
 def test_non_resident_wins_over_threshold_and_unknowns():
@@ -106,7 +106,7 @@ def test_exclusive_threshold_at_the_edge():
     at_edge, _ = run(rules, amount="5000", payee="resident")
     assert at_edge["outcome"] == NO_WITHHOLDING and policy_core(at_edge) == NO_WITHHOLDING
     assert at_edge["requires_human_review"] is False
-    assert cited(at_edge) == [("https://example.test/doc1.pdf", 11, "quote 1")]
+    assert cited(at_edge) == [("https://www.irs.gov/doc1.pdf", 11, "quote 1")]
     above, _ = run(rules, amount="5000.01")
     assert above["outcome"] == {"withholding_applies": True, "rate": "0.2400", "basis": "percent_of_payment"}
 
@@ -226,7 +226,7 @@ def test_contract_fields_and_query_echo():
     assert resp["query"] == {"payment_type": "services", "amount": 12000,
                              "jurisdiction": "US-FED", "tax_year": 2026}
     assert type(resp["query"]["amount"]) is int
-    assert resp["provenance"] == [{"source_url": "https://example.test/doc1.pdf", "page": 11, "quote": "quote 1"}]
+    assert resp["provenance"] == [{"source_url": "https://www.irs.gov/doc1.pdf", "page": 11, "quote": "quote 1"}]
     for extra in ("policy_outcome", "policy_applied", "security_events", "decision_trace"):
         assert extra in resp
     json.dumps(resp)  # toda la respuesta es JSON puro
@@ -405,3 +405,18 @@ def test_qualified_rule_adds_no_doubt_when_a_plain_rule_states_the_same_rate():
     resp, _ = run(rules)
     assert resp["outcome"]["rate"] == "0.0163" and resp["review_reasons"] == []
     assert [p["quote"] for p in resp["provenance"]] == ["quote 1", "quote 2"]
+
+
+# Mejoras rápidas (2026-11-19): fuente fuera de la lista de sitios oficiales.
+
+def test_rule_from_a_source_outside_the_official_list_always_asks_for_review():
+    # Quien tenga la clave de ingesta podría publicar una "tasa" en un sitio propio.
+    unknown = Rule(**{**vars(rule(1)), "source_url": "https://tax-rates.example.com/doc.pdf"})
+    resp, _ = run([unknown])
+    assert resp["outcome"]["rate"] == "0.2400" and resp["review_reasons"] == ["source_not_on_allowlist"]
+
+
+def test_rule_from_an_official_source_is_not_flagged():
+    official = Rule(**{**vars(rule(1)), "source_url": "https://www.irs.gov/pub/irs-pdf/p505.pdf"})
+    resp, _ = run([official])
+    assert resp["review_reasons"] == []

@@ -1,9 +1,5 @@
-"""Registro estructurado con redacción. Una línea JSON por evento, a la salida estándar.
-
-Frontera (R7): aquí nunca entra un monto exacto, una clave ni una URL con parámetros. Quien
-llama entrega el monto ya reducido a un rango (resolve.amount_band); este módulo además
-limpia todo lo que reciba, por si alguien se equivoca.
-"""
+"""Registro JSON por evento, con redacción. Frontera de R7: el monto llega ya como rango
+(resolve.amount_band) y aquí además se limpian claves, credenciales y parámetros de URL."""
 import json
 import re
 import sys

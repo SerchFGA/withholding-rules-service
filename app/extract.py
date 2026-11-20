@@ -1,7 +1,4 @@
-"""Extracción: manda grupos de páginas al modelo en paralelo y recoge afirmaciones crudas.
-
-Aquí no se valida nada (eso es app.validate) y el modelo no decide el flujo: lee y devuelve datos.
-"""
+"""Manda grupos de páginas al modelo en paralelo y recoge afirmaciones crudas, sin validar."""
 import asyncio
 import base64
 import json
@@ -42,7 +39,8 @@ Fields of each claim:
 threshold. Use "unsupported_cap" for maximum caps or ceilings, "unsupported_bracket" for \
 brackets that add an amount plus a percentage, "unsupported_table" for lookup tables.
 - jurisdiction: ISO two-letter country code plus optional subdivision, e.g. US-FED, CA-ON, CO.
-- payment_type: the closest allowed value; "other" if none fits. When one rule covers several allowed payment types, return one claim per type it covers, with the same quote.
+- payment_type: the closest allowed value; "other" if none fits. When one rule covers several \
+allowed payment types, return one claim per type it covers, with the same quote.
 - tax_year: the tax year the rule applies to.
 - condition: "unconditional" unless the rule depends on something: "requires_missing_tin" when \
 it applies because the payee gave no taxpayer identification number, "optional_method" when it \

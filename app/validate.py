@@ -85,10 +85,15 @@ def _amount_in(text: str, value: Decimal, number_locale: str) -> bool:
     whole, _, fraction = format(value.normalize(), "f").partition(".")
     body = f"{sep}?".join(f"{int(whole):,}".split(","))
     tail = f"{dec}{fraction}0*" if fraction else f"(?:{dec}0+)?"
-    forms = [f"{body}{tail}(?![.,]?\d)"]
+    forms = [rf"{body}{tail}(?![.,]?\d)"]
     if value and value % 1_000_000 == 0:   # "$1 million"
         forms.append(rf"{int(value // 1_000_000)}\s+million")
     return re.search(rf"(?<![\d.,])(?:{'|'.join(forms)})", text) is not None
+
+
+def host_country(url: str) -> str | None:   # país del sitio oficial; None si no está en la lista
+    host = (urlsplit(url if "://" in url else "//" + url).hostname or "").lower()
+    return next((v for k, v in HOST_COUNTRY.items() if host == k or host.endswith("." + k)), None)
 
 
 def validate_claim(claim: dict, pages: dict[int, Page], doc_years: set[int],
@@ -100,8 +105,7 @@ def validate_claim(claim: dict, pages: dict[int, Page], doc_years: set[int],
     if (c["kind"] not in RULE_KINDS or c["payment_type"] not in PAYMENT_TYPES
             or c["condition"] not in CONDITIONS):
         return None, "unknown_vocabulary"
-    host = (urlsplit(source_url if "://" in source_url else "//" + source_url).hostname or "").lower()
-    country = next((v for k, v in HOST_COUNTRY.items() if host == k or host.endswith("." + k)), None)
+    country = host_country(source_url)
     if not re.fullmatch(JURISDICTION_PATTERN, c["jurisdiction"]) or (
             country and c["jurisdiction"][:2] != country):
         return None, "jurisdiction_mismatch"

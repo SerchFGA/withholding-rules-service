@@ -314,3 +314,19 @@ def test_a_new_pipeline_version_re_reads_documents_and_is_recorded(service, monk
     again = service.ingest().json()
     assert again["cached"] is False and again["model_version"] == "fake-model-1+pnext"
     assert service.state["model_calls"] == 2 and service.ingest().json()["cached"] is True
+
+
+# Mejoras rápidas (2026-11-19).
+
+def test_document_with_too_many_pages_is_refused_before_any_model_call(service, monkeypatch):
+    monkeypatch.setattr(models, "MAX_PAGES", 0)
+    response = service.ingest()
+    assert response.status_code == 413 and response.json()["error"] == "too_many_pages"
+    assert service.state["model_calls"] == 0
+
+
+def test_responses_carry_basic_security_headers(service):
+    headers = service.get("/health").headers
+    assert headers["x-content-type-options"] == "nosniff"
+    assert headers["x-frame-options"] == "DENY"
+    assert headers["referrer-policy"] == "no-referrer"

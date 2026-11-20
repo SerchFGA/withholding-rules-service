@@ -5,6 +5,7 @@ from decimal import Decimal
 
 CONTRACT_VERSION = "1.0"
 REQUEST_BUDGET_SECONDS = 120.0
+MAX_PAGES = 300   # tope por documento: acota el gasto de modelo de una sola ingesta
 PIPELINE_VERSION = "2"   # sube al cambiar el prompt o el validador: obliga a releer los documentos
 
 # Un documento nuevo puede traer otra jurisdicción: se valida la forma (país ISO y subdivisión
@@ -33,7 +34,7 @@ REVIEW_REASONS = (
     "no_rate_in_publication", "no_rule_for_tax_year", "tax_year_ambiguous_resolved_to_later",
     "conditional_on_payee_tin", "optional_withholding_method", "condition_not_evaluable",
     "conflicting_rules", "unsupported_rule_structure", "source_page_was_scanned",
-    "payee_type_not_provided", "document_partially_read",
+    "payee_type_not_provided", "document_partially_read", "source_not_on_allowlist",
 )
 
 

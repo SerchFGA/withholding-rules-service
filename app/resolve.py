@@ -1,12 +1,9 @@
-"""Decide una retención. Función pura: sin modelo, sin red, sin base de datos.
-
-El orden de los pasos y las tres reglas duras viven aquí (R1). Un dato ausente es
-"desconocido, revisar", nunca "no se retiene" (R4). El monto exacto no sale en la traza ni
-en el registro (R7).
-"""
+"""Decide una retención sin modelo, red ni base: orden de pasos y reglas duras (R1). Un dato
+ausente es "desconocido, revisar" (R4). El monto exacto no sale en traza ni registro (R7)."""
 from decimal import Decimal
 
 from app.models import CONTRACT_VERSION, FIRM_CONDITIONS, NON_RESIDENT_MIN_RATE, Query, Rule
+from app.validate import host_country
 
 _CONDITION_REASONS = {
     "requires_missing_tin": "conditional_on_payee_tin",
@@ -48,7 +45,8 @@ def _doubts(rules: list[Rule]) -> list[str]:
     """Motivos de revisión por regla condicional o salida de una página escaneada."""
     found = []
     for r in rules:
-        for x in (_CONDITION_REASONS.get(r.condition), "source_page_was_scanned" if r.source_kind == "vision" else None):
+        for x in (_CONDITION_REASONS.get(r.condition), "source_page_was_scanned" if r.source_kind == "vision" else None,
+                  None if host_country(r.source_url) else "source_not_on_allowlist"):
             if x and x not in found:
                 found.append(x)
     return found

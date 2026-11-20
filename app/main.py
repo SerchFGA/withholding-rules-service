@@ -13,7 +13,7 @@ from pathlib import Path
 from fastapi import FastAPI, Header, Request
 from fastapi.responses import FileResponse, JSONResponse
 
-from app import db, extract, fetch, parse, validate
+from app import db, extract, fetch, models, parse, validate
 from app.logs import log, safe_url
 from app.models import (JURISDICTION_PATTERN, PAYEE_TYPES, PAYMENT_TYPES, PIPELINE_VERSION, Deadline,
                         DeadlineExceeded, Query)
@@ -39,6 +39,8 @@ async def request_context(request: Request, call_next):
     except Exception as exc:  # el detalle no sale al cliente ni al log, solo el tipo
         log("unhandled_error", request_id=request.state.request_id, error_type=type(exc).__name__)
         response = error(500, "internal_error", request.state.request_id)
+    response.headers.update({"X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY",
+                             "Referrer-Policy": "no-referrer"})
     log("request", request_id=request.state.request_id, method=request.method,
         path=request.url.path, status=response.status_code)
     return response
@@ -96,6 +98,8 @@ async def ingest(request: Request, x_ingest_key: str | None = Header(default=Non
     except ValueError:
         return error(422, "unsupported_document_type", rid)
     pages = await asyncio.to_thread(parse.parse, fetched.content, kind)
+    if len(pages) > models.MAX_PAGES:   # antes de gastar una sola llamada al modelo
+        return error(413, "too_many_pages", rid, pages=len(pages), max_pages=models.MAX_PAGES)
     scanned = [p.number for p in pages if p.source_kind == "vision"]
     if scanned:   # una página escaneada se transcribe primero; después se valida como cualquier otra
         images = await asyncio.to_thread(lambda: {n: fetched.content if kind == "image" else
